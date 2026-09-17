@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSE Signage Generator – Central HSE Operations</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        :root {
+            --bg-canvas: #F8FAFC;
+            --surface-card: #FFFFFF;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --text-subtle: #94A3B8;
+            --border-subtle: #E2E8F0;
+            --border-light: #F1F5F9;
+            --aramco-green: #006C35;
+            --aramco-green-hover: #00552A;
+            --heisco-blue: #0F2C5C;
+            --danger-red: #DC2626;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-weight: 500;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Top Navigation Bar: Pure White, 64px, Sticky, Subtle Shadow */
+        .top-navbar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            height: 64px;
+            background: #FFFFFF;
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 0 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+        }
+
+        .top-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .nav-back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-subtle);
+            background: #FFFFFF;
+            transition: all 0.15s ease;
+        }
+
+        .nav-back-link:hover {
+            background: #F1F5F9;
+            color: var(--text-main);
+        }
+
+        .logo-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-group img {
+            height: 22px;
+            object-fit: contain;
+        }
+
+        .logo-vdivider {
+            width: 1px;
+            height: 24px;
+            background: var(--border-subtle);
+        }
+
+        .top-header-text {
+            line-height: 1.25;
+        }
+
+        .top-header-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        .top-header-brand {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--heisco-blue);
+            letter-spacing: -0.2px;
+        }
+
+        .top-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-text {
+            text-align: right;
+            line-height: 1.25;
+        }
+
+        .user-name {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.2px;
+        }
+
+        .user-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-top: 1px;
+        }
+
+        .btn-top-logout {
+            background: #FFFFFF;
+            color: var(--danger-red);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 12px;
+            padding: 7px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .btn-top-logout:hover {
+            background: #FEF2F2;
+            border-color: #FCA5A5;
+        }
+
+        /* Main Container: Apple / Linear clean card */
+        .page-container {
+            width: 640px;
+            max-width: 92%;
+            margin: 40px auto 60px;
+            background: var(--surface-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 36px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #F0FDF4;
+            color: var(--aramco-green);
+            border: 1px solid #DCFCE7;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+        }
+
+        .page-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.3px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 13.5px;
+            margin-top: 6px;
+            margin-bottom: 24px;
+            line-height: 1.5;
+            font-weight: 400;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-main);
+            background: #FFFFFF;
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--aramco-green);
+        }
+
+        .btn-primary {
+            width: 100%;
+            background: var(--aramco-green);
+            color: #FFFFFF;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn-primary:hover {
+            background: var(--aramco-green-hover);
+        }
+
+        .presets-row {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-light);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+        }
+
+        .preset-chip {
+            background: #F8FAFC;
+            color: #334155;
+            border: 1px solid var(--border-subtle);
+            padding: 5px 11px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-weight: 500;
+        }
+
+        .preset-chip:hover {
+            background: #F1F5F9;
+            color: var(--text-main);
+            border-color: #CBD5E1;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: auto;
+            padding: 20px;
+            font-size: 11.5px;
+            color: var(--text-subtle);
+            border-top: 1px solid var(--border-subtle);
+            background: #FFFFFF;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation Bar: Pure White, 64px, Sticky, Subtle Shadow -->
+    <header class="top-navbar" id="topNavComponent">
+        <div class="top-left">
+            <a href="/dashboard" class="nav-back-link">&larr; Dashboard</a>
+            <div class="logo-group">
+                <img src="/static/logos/heisco.png" alt="HEISCO">
+                <img src="/static/logos/enppi.png" alt="ENPPI">
+                <img src="/static/logos/aramco.png" alt="Saudi Aramco">
+            </div>
+            <div class="logo-vdivider"></div>
+            <div class="top-header-text">
+                <div class="top-header-sub">CENTRAL HSE OPERATIONS / Utilities Hub</div>
+                <div class="top-header-brand">HEISCO - ENPPI - SAUDI ARAMCO</div>
+            </div>
+        </div>
+
+        <div class="top-right">
+            <!-- User Display: VENKATA NAGA PRASAD -->
+            <div class="user-text">
+                <div class="user-name">{{ current_user_name }}</div>
+                <div class="user-sub">ID: {{ current_employee_id }} | ROLE: {{ current_user_role }}</div>
+            </div>
+
+            <!-- Primary Logout Button -->
+            <a href="/logout" class="btn-top-logout" id="topNavLogout">
+                <span>Sign Out</span>
+            </a>
+        </div>
+    </header>
+
+    <div class="page-container">
+        <div class="card-header-badge">
+            Multilingual &bull; PowerPoint (.pptx)
+        </div>
+        <h1 class="page-title">HSE Safety Signage Generator</h1>
+        <p class="subtitle">
+            Generate official 4-language safety caution &amp; PPE compliance signage with corporate logos and high-contrast pictograms.
+        </p>
+
+        <form action="/generate_signage" method="post">
+            <div class="form-group">
+                <label class="form-label">Signage Title / Directive:</label>
+                <input type="text" id="signage_input" name="signage_name" placeholder="Enter signage title (e.g., Mandatory PPE Zone)" value="{{ signage_name or 'PPE Free Zone' }}" required>
+            </div>
+
+            <button type="submit" class="btn-primary" id="btn_submit_signage">
+                Generate PPT Signage (.pptx)
+            </button>
+
+            <div class="presets-row">
+                <span style="font-size: 11.5px; color: var(--text-muted); width: 100%; margin-bottom: 2px;">Quick Presets:</span>
+                <span class="preset-chip" onclick="setSignage('PPE Free Zone')">PPE Free Zone</span>
+                <span class="preset-chip" onclick="setSignage('Slip, Trip, Fall Hazard')">Slip, Trip, Fall Hazard</span>
+                <span class="preset-chip" onclick="setSignage('Mandatory PPE Zone')">Mandatory PPE Zone</span>
+                <span class="preset-chip" onclick="setSignage('Hard Hat Required')">Hard Hat Required</span>
+                <span class="preset-chip" onclick="setSignage('Safety Glasses Required')">Safety Glasses Required</span>
+            </div>
+        </form>
+    </div>
+
+    <footer class="footer">
+        &copy; 2026 HEISCO – ENPPI – Saudi Aramco Abqaiq Facilities (BI-10-10303) &bull; Central HSE Operations Hub
+    </footer>
+
+    <script>
+        function setSignage(text) {
+            document.getElementById('signage_input').value = text;
+        }
+    </script>
+</body>
+</html>

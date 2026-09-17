@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download Generated Reports – Central HSE Operations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    :root {
+      --bg-canvas: #F8FAFC;
+      --surface-card: #FFFFFF;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --border-subtle: #E2E8F0;
+      --aramco-green: #006C35;
+      --aramco-green-hover: #00552A;
+      --heisco-blue: #0F2C5C;
+      --danger-red: #DC2626;
+    }
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--text-main);
+      line-height: 1.5;
+      font-weight: 500;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .top-navbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      height: 64px;
+      background: #FFFFFF;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+      margin-bottom: 30px;
+    }
+    .top-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .nav-back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border-subtle);
+      background: #FFFFFF;
+      transition: all 0.15s ease;
+    }
+    .nav-back-link:hover {
+      background: #F1F5F9;
+      color: var(--text-main);
+    }
+    .logo-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo-group img {
+      height: 22px;
+      object-fit: contain;
+    }
+    .logo-vdivider {
+      width: 1px;
+      height: 24px;
+      background: var(--border-subtle);
+    }
+    .top-header-text {
+      line-height: 1.25;
+    }
+    .top-header-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+    .top-header-brand {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--heisco-blue);
+      letter-spacing: -0.2px;
+    }
+    .top-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .user-text {
+      text-align: right;
+      line-height: 1.25;
+    }
+    .user-name {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.2px;
+    }
+    .user-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-top: 1px;
+    }
+    .btn-top-logout {
+      background: #FFFFFF;
+      color: var(--danger-red);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 12px;
+      padding: 7px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .btn-top-logout:hover {
+      background: #FEF2F2;
+      border-color: #FCA5A5;
+    }
+    .container {
+      max-width: 900px;
+      width: 92%;
+      margin: 0 auto 50px;
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      padding: 36px;
+    }
+    .success-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #dcfce7;
+      color: #15803d;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      margin-bottom: 12px;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 8px;
+    }
+    .subtext {
+      font-size: 14px;
+      color: #4b5563;
+      margin-bottom: 24px;
+    }
+    .download-all-bar {
+      background: #f0fdf4;
+      border: 1.5px solid #86efac;
+      border-radius: 8px;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+    .btn-download-all {
+      background: #15803d;
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 10px 20px;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: background-color 0.15s;
+    }
+    .btn-download-all:hover {
+      background: #166534;
+    }
+    .files-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .file-card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .file-card:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .file-type-tag {
+      display: inline-block;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 10px;
+    }
+    .tag-word {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+    .tag-excel {
+      background: #f0fdf4;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+    .tag-activity {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+    .file-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 6px;
+      line-height: 1.3;
+    }
+    .file-desc {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 16px;
+      flex-grow: 1;
+      line-height: 1.4;
+    }
+    .file-meta {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-bottom: 14px;
+    }
+    .btn-download {
+      display: block;
+      text-align: center;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px 12px;
+      border-radius: 6px;
+      transition: background-color 0.15s;
+    }
+    .btn-word {
+      background: #2563eb;
+      color: #ffffff;
+    }
+    .btn-word:hover {
+      background: #1d4ed8;
+    }
+    .btn-excel {
+      background: #16a34a;
+      color: #ffffff;
+    }
+    .btn-excel:hover {
+      background: #15803d;
+    }
+    .btn-activity {
+      background: #0284c7;
+      color: #ffffff;
+    }
+    .btn-activity:hover {
+      background: #0369a1;
+    }
+    .details-box {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 18px;
+      margin-bottom: 28px;
+    }
+    .details-box h3 {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: 10px;
+    }
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      row-gap: 8px;
+      font-size: 12.5px;
+      color: #4b5563;
+    }
+    .details-grid strong {
+      color: #111827;
+    }
+    .actions-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 20px;
+      border-top: 1px solid #f0f0f0;
+    }
+    .btn-secondary {
+      font-size: 13.5px;
+      color: #374151;
+      text-decoration: none;
+      padding: 8px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 5px;
+      background: #ffffff;
+    }
+    .btn-secondary:hover {
+      background: #f3f4f6;
+      border-color: #9ca3af;
+    }
+    .nav-bar {
+      max-width: 900px;
+      margin: 0 auto 16px auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 10px 16px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      color: #111827;
+      text-decoration: none;
+    }
+    .nav-links {
+      display: flex;
+      gap: 8px;
+    }
+    .nav-link {
+      padding: 5px 12px;
+      font-size: 12.5px;
+      font-weight: 600;
+      border-radius: 5px;
+      text-decoration: none;
+      color: #4b5563;
+      transition: all 0.15s;
+    }
+    .nav-link:hover {
+      background: #f3f4f6;
+      color: #111827;
+    }
+    .nav-link.active {
+      background: #111827;
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+  <!-- Top Navigation Bar: Pure White, 64px, Sticky, Subtle Shadow -->
+  <header class="top-navbar" id="topNavComponent">
+    <div class="top-left">
+      <a href="/dashboard" class="nav-back-link">&larr; Dashboard</a>
+      <div class="logo-group">
+        <img src="/static/logos/heisco.png" alt="HEISCO">
+        <img src="/static/logos/enppi.png" alt="ENPPI">
+        <img src="/static/logos/aramco.png" alt="Saudi Aramco">
+      </div>
+      <div class="logo-vdivider"></div>
+      <div class="top-header-text">
+        <div class="top-header-sub">CENTRAL HSE OPERATIONS / Utilities Hub</div>
+        <div class="top-header-brand">HEISCO - ENPPI - SAUDI ARAMCO</div>
+      </div>
+    </div>
+
+    <div class="top-right">
+      <!-- User Display: VENKATA NAGA PRASAD -->
+      <div class="user-text">
+        <div class="user-name">{{ current_user_name }}</div>
+        <div class="user-sub">ID: {{ current_employee_id }} | ROLE: {{ current_user_role }}</div>
+      </div>
+
+      <!-- Primary Logout Button -->
+      <a href="/logout" class="btn-top-logout" id="topNavLogout">
+        <span>Sign Out</span>
+      </a>
+    </div>
+  </header>
+
+  <div class="container" id="download-page">
+    <div class="success-badge">
+      ✓ Generation Complete
+    </div>
+    <h1>Your HSE Reports Are Ready</h1>
+    <p class="subtext">All 3 HSE documentation files have been generated with matching company formats, auto-matched names, and official Aramco/HEISCO layouts.</p>
+
+    <!-- Master Download Bar -->
+    <div class="download-all-bar" id="bar-download-all">
+      <div>
+        <strong style="color: #166534; font-size: 15px; display: block; margin-bottom: 2px;">Download Complete Weekly Package</strong>
+        <span style="color: #15803d; font-size: 12.5px;">Includes Observation Register (.docx), JSL Log Sheet (.xlsx), and Weekly Activity Report (.docx)</span>
+      </div>
+      <a href="/download/all" class="btn-download-all" id="btn-download-all-zip">
+        📦 Download All 3 Reports (.zip)
+      </a>
+    </div>
+
+    <!-- Download Cards -->
+    <div class="files-grid">
+      <!-- File 1: Word Observation Register -->
+      <div class="file-card" id="card-word-file">
+        <div>
+          <span class="file-type-tag tag-word">Word Document (.docx)</span>
+          <div class="file-name">HSE Observation Register</div>
+          <div class="file-desc">
+            Full A4 Landscape, 3 observations/page, green header band, 3-column footer sign-off (Observed By, Status By, Reviewed By: AHMED GHALWASH), and EWI 107 footer.
+          </div>
+          <div class="file-meta">
+            📄 {{ total_pages }} pages ({{ total_records }} observations)
+          </div>
+        </div>
+        <a href="/download/word" class="btn-download btn-word" id="btn-download-word">
+          📥 Download Register (.docx)
+        </a>
+      </div>
+
+      <!-- File 2: Excel JSL Log Sheet -->
+      <div class="file-card" id="card-excel-file">
+        <div>
+          <span class="file-type-tag tag-excel">Excel Workbook (.xlsx)</span>
+          <div class="file-name">JSL Log Sheet (HSE Action Tracking)</div>
+          <div class="file-desc">
+            Enppi &amp; Aramco logos, yellow title banner, ABQ-DBN Project BI-10-10303 details, summary statistics table, pie chart, and HSCO-OB IDs.
+          </div>
+          <div class="file-meta">
+            📊 14 columns, {{ total_records }} actions, pie chart
+          </div>
+        </div>
+        <a href="/download/excel" class="btn-download btn-excel" id="btn-download-excel">
+          📥 Download JSL Log (.xlsx)
+        </a>
+      </div>
+
+      <!-- File 3: Word Weekly Activity Report -->
+      <div class="file-card" id="card-activity-file">
+        <div>
+          <span class="file-type-tag tag-activity">Word Document (.docx)</span>
+          <div class="file-name">Weekly HSE Activity Report</div>
+          <div class="file-desc">
+            HEISCO / GULF DREDGING header, Cost Center 43300301, Report No. {{ week_no }}, Significant Activities grouped by Site, HSE Team table, and Areas of Concern.
+          </div>
+          <div class="file-meta">
+            📋 2 pages (Weekly Report Rev.1 04 Apr. 2026)
+          </div>
+        </div>
+        <a href="/download/weekly" class="btn-download btn-activity" id="btn-download-weekly">
+          📥 Download Weekly Report (.docx)
+        </a>
+      </div>
+    </div>
+
+    <!-- Generation Details Box -->
+    <div class="details-box">
+      <h3>Applied Project Specifications</h3>
+      <div class="details-grid">
+        <div>CC Name: <strong>DEBOTTLENECK PRODUCTION FACILITIES ABQAIQ BI NO. 10-10303</strong></div>
+        <div>Cost Center No.: <strong>43300301</strong></div>
+        <div>Report / Week No.: <strong>{{ week_no }}</strong></div>
+        <div>Reviewed By Date: <strong>{{ reviewed_by_date }}</strong></div>
+        <div>Reviewed By PM: <strong>{{ reviewed_by_name }}</strong></div>
+        <div>Total Register Pages: <strong>{{ total_pages }} (OR/01 to OR/{{ '%02d' % total_pages }})</strong></div>
+        <div>Ref No Format: <strong>433001/HSE-OR/XX/2026</strong></div>
+        <div>Prepared by: <strong>Obaid Khan (HSE Manager)</strong></div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions-bar">
+      <a href="/preview" class="btn-secondary" id="btn-back-preview">← Back to Preview</a>
+      <a href="/upload" class="btn-secondary" id="btn-new-upload">↻ Upload New Batch</a>
+    </div>
+  </div>
+</body>
+</html>

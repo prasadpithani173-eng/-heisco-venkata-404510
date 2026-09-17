@@ -1,0 +1,6 @@
+{
+  "name": "Central HSE Operations",
+  "description": "HEISCO–ENPPI–Saudi Aramco Central HSE Operations system with Observation Reports, Weekly HSE Activity Reports, JSL Log Sheets, Multilingual PPE Signage, KPI Chart Generator, SQLite authentication, and role-based access.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

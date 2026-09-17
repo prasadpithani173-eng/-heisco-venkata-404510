@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSE Action Tracking Register &amp; JSL Log Sheet – Central HSE Operations</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        :root {
+            --bg-canvas: #F8FAFC;
+            --surface-card: #FFFFFF;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --text-subtle: #94A3B8;
+            --border-subtle: #E2E8F0;
+            --border-light: #F1F5F9;
+            --aramco-green: #006C35;
+            --aramco-green-hover: #00552A;
+            --heisco-blue: #0F2C5C;
+            --danger-red: #DC2626;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-weight: 500;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Top Navigation Bar: Pure White, 64px, Sticky, Subtle Shadow */
+        .top-navbar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            height: 64px;
+            background: #FFFFFF;
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 0 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+        }
+
+        .top-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .nav-back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-subtle);
+            background: #FFFFFF;
+            transition: all 0.15s ease;
+        }
+
+        .nav-back-link:hover {
+            background: #F1F5F9;
+            color: var(--text-main);
+        }
+
+        .logo-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-group img {
+            height: 22px;
+            object-fit: contain;
+        }
+
+        .logo-vdivider {
+            width: 1px;
+            height: 24px;
+            background: var(--border-subtle);
+        }
+
+        .top-header-text {
+            line-height: 1.25;
+        }
+
+        .top-header-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        .top-header-brand {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--heisco-blue);
+            letter-spacing: -0.2px;
+        }
+
+        .top-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-text {
+            text-align: right;
+            line-height: 1.25;
+        }
+
+        .user-name {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.2px;
+        }
+
+        .user-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-top: 1px;
+        }
+
+        .btn-top-logout {
+            background: #FFFFFF;
+            color: var(--danger-red);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 12px;
+            padding: 7px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .btn-top-logout:hover {
+            background: #FEF2F2;
+            border-color: #FCA5A5;
+        }
+
+        /* Main Container: Apple / Linear clean card */
+        .page-container {
+            width: 860px;
+            max-width: 94%;
+            margin: 36px auto 60px;
+            background: var(--surface-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 36px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #F0FDF4;
+            color: var(--aramco-green);
+            border: 1px solid #DCFCE7;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+        }
+
+        .page-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.3px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 13.5px;
+            margin-top: 6px;
+            margin-bottom: 24px;
+            line-height: 1.5;
+            font-weight: 400;
+        }
+
+        .feature-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 28px;
+        }
+
+        .pill {
+            background: #F8FAFC;
+            color: #334155;
+            font-size: 11.5px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        .file-upload-box {
+            border: 1px dashed #CBD5E1;
+            background: #F8FAFC;
+            border-radius: 10px;
+            padding: 22px;
+            text-align: center;
+            transition: border-color 0.15s ease;
+        }
+
+        .file-upload-box:hover {
+            border-color: #94A3B8;
+        }
+
+        .file-upload-box input[type="file"] {
+            font-size: 13px;
+            color: var(--text-main);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            font-size: 13.5px;
+            color: var(--text-main);
+            background: #FFFFFF;
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--aramco-green);
+        }
+
+        .btn-primary {
+            width: 100%;
+            background: var(--aramco-green);
+            color: #FFFFFF;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 11px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn-primary:hover {
+            background: var(--aramco-green-hover);
+        }
+
+        .btn-sample {
+            width: 100%;
+            background: #F0FDF4;
+            color: var(--aramco-green);
+            border: 1px solid #DCFCE7;
+            font-size: 13.5px;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn-sample:hover {
+            background: #DCFCE7;
+        }
+
+        .preview-schema-card {
+            background: #F8FAFC;
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 24px;
+            font-size: 12.5px;
+            color: #475569;
+            border: 1px solid var(--border-subtle);
+            line-height: 1.6;
+        }
+
+        .preview-schema-card strong {
+            color: var(--text-main);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: auto;
+            padding: 20px;
+            font-size: 11.5px;
+            color: var(--text-subtle);
+            border-top: 1px solid var(--border-subtle);
+            background: #FFFFFF;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation Bar: Pure White, 64px, Sticky, Subtle Shadow -->
+    <header class="top-navbar" id="topNavComponent">
+        <div class="top-left">
+            <a href="/dashboard" class="nav-back-link">&larr; Dashboard</a>
+            <div class="logo-group">
+                <img src="/static/logos/heisco.png" alt="HEISCO">
+                <img src="/static/logos/enppi.png" alt="ENPPI">
+                <img src="/static/logos/aramco.png" alt="Saudi Aramco">
+            </div>
+            <div class="logo-vdivider"></div>
+            <div class="top-header-text">
+                <div class="top-header-sub">CENTRAL HSE OPERATIONS / Utilities Hub</div>
+                <div class="top-header-brand">HEISCO - ENPPI - SAUDI ARAMCO</div>
+            </div>
+        </div>
+
+        <div class="top-right">
+            <!-- User Display: VENKATA NAGA PRASAD -->
+            <div class="user-text">
+                <div class="user-name">{{ current_user_name }}</div>
+                <div class="user-sub">ID: {{ current_employee_id }} | ROLE: {{ current_user_role }}</div>
+            </div>
+
+            <!-- Primary Logout Button -->
+            <a href="/logout" class="btn-top-logout" id="topNavLogout">
+                <span>Sign Out</span>
+            </a>
+        </div>
+    </header>
+
+    <div class="page-container">
+        <div class="card-header-badge">
+            Action Tracking &bull; Excel (.xlsx) Register
+        </div>
+        <h1 class="page-title">HSE Action Tracking Register (JSL Log)</h1>
+        <p class="subtitle">
+            Generate standardized HSE Action Tracking Registers with corporate logo headers, standard title block,
+            project metadata, summary metrics, and open/closed status tracking in Microsoft Excel format.
+        </p>
+
+        <div class="feature-pills">
+            <span class="pill">✓ Corporate Logo Headers</span>
+            <span class="pill">✓ Action Tracking Summary</span>
+            <span class="pill">✓ Open vs Closed Status Cards</span>
+            <span class="pill">✓ Full Audit Trail</span>
+            <span class="pill">✓ Excel (.xlsx) Formatted</span>
+        </div>
+
+        <form action="/generate_jsl_log" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label class="form-label">Upload Weekly Observation / JSL Excel File:</label>
+                <div class="file-upload-box">
+                    <input type="file" name="jsl_file" accept=".xlsx, .xls">
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">
+                        Upload raw observations or JSL sheet to format into official Aramco-ENPPI tracking layout.
+                    </p>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Project Name:</label>
+                    <input type="text" name="project_name" value="ABQ-DBN Project" placeholder="Project Name">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Project Number:</label>
+                    <input type="text" name="project_number" value="BI-10-10303" placeholder="Project Number">
+                </div>
+            </div>
+
+            <div style="margin-top: 10px;">
+                <button type="submit" class="btn-primary" id="btn_generate_jsl">
+                    Generate JSL Log Excel (.xlsx)
+                </button>
+            </div>
+        </form>
+
+        <form action="/use-sample" method="post" style="margin-top: 14px;">
+            <button type="submit" class="btn-sample" id="btn_sample_jsl">
+                ⚡ Load Sample Data &amp; View JSL Log
+            </button>
+        </form>
+
+        <div class="preview-schema-card">
+            <strong>Standard Layout Specifications:</strong><br>
+            • <strong>Header Logos:</strong> ENPPI &bull; Saudi Aramco Overseas<br>
+            • <strong>KPIs Tracked:</strong> Last Update Date, Total Actions, Closed Actions, Open Actions<br>
+            • <strong>Data Columns:</strong> SL No, Reference No, Date, Area/Location, Description, Category, Action Required, Responsible Person, Target Date, Status, Closure Date
+        </div>
+    </div>
+
+    <footer class="footer">
+        &copy; 2026 HEISCO – ENPPI – Saudi Aramco Abqaiq Facilities (BI-10-10303) &bull; Central HSE Operations Hub
+    </footer>
+
+</body>
+</html>

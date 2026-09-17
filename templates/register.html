@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Administration &amp; Access Control – Central HSE Operations</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        :root {
+            --bg-canvas: #F8FAFC;
+            --surface-card: #FFFFFF;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --text-subtle: #94A3B8;
+            --border-subtle: #E2E8F0;
+            --border-light: #F1F5F9;
+            --aramco-green: #006C35;
+            --aramco-green-hover: #00552A;
+            --heisco-blue: #0F2C5C;
+            --danger-red: #DC2626;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-weight: 500;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Top Navigation Bar: Pure White, 64px, Sticky, Subtle Shadow */
+        .top-navbar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            height: 64px;
+            background: #FFFFFF;
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 0 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+        }
+
+        .top-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .nav-back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-subtle);
+            background: #FFFFFF;
+            transition: all 0.15s ease;
+        }
+
+        .nav-back-link:hover {
+            background: #F1F5F9;
+            color: var(--text-main);
+        }
+
+        .logo-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-group img {
+            height: 22px;
+            object-fit: contain;
+        }
+
+        .logo-vdivider {
+            width: 1px;
+            height: 24px;
+            background: var(--border-subtle);
+        }
+
+        .top-header-text {
+            line-height: 1.25;
+        }
+
+        .top-header-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        .top-header-brand {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--heisco-blue);
+            letter-spacing: -0.2px;
+        }
+
+        .top-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-text {
+            text-align: right;
+            line-height: 1.25;
+        }
+
+        .user-name {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.2px;
+        }
+
+        .user-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-top: 1px;
+        }
+
+        .btn-top-logout {
+            background: #FFFFFF;
+            color: var(--danger-red);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 12px;
+            padding: 7px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .btn-top-logout:hover {
+            background: #FEF2F2;
+            border-color: #FCA5A5;
+        }
+
+        /* Content Container */
+        .content-container {
+            width: 1060px;
+            max-width: 95%;
+            margin: 36px auto 60px;
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 860px) {
+            .content-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--surface-card);
+            padding: 28px;
+            border-radius: 16px;
+            border: 1px solid var(--border-subtle);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .card h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 4px;
+            letter-spacing: -0.2px;
+        }
+
+        .card p.sub {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            font-weight: 400;
+        }
+
+        .alert-error {
+            background: #FEF2F2;
+            color: #991B1B;
+            border: 1px solid #FCA5A5;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+
+        .alert-success {
+            background: #F0FDF4;
+            color: var(--aramco-green);
+            border: 1px solid #DCFCE7;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 6px;
+        }
+
+        .input-field, select {
+            width: 100%;
+            height: 40px;
+            padding: 0 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            font-size: 13.5px;
+            background: #FFFFFF;
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+
+        .input-field:focus, select:focus {
+            border-color: var(--aramco-green);
+        }
+
+        .btn-submit {
+            width: 100%;
+            height: 42px;
+            background: var(--aramco-green);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            margin-top: 8px;
+        }
+
+        .btn-submit:hover {
+            background: var(--aramco-green-hover);
+        }
+
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .user-table th {
+            background: #F8FAFC;
+            color: var(--text-muted);
+            text-align: left;
+            padding: 10px 12px;
+            font-size: 11.5px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .user-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text-main);
+            font-size: 13px;
+        }
+
+        .user-table tr:hover {
+            background: #F8FAFC;
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .role-admin { background: #FEF2F2; color: #991B1B; border: 1px solid #FCA5A5; }
+        .role-officer { background: #E0F2FE; color: #0369A1; border: 1px solid #BAE6FD; }
+        .role-supervisor { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+        .role-engineer { background: #F0FDF4; color: #166534; border: 1px solid #DCFCE7; }
+
+        .btn-del {
+            background: #FFFFFF;
+            color: var(--danger-red);
+            border: 1px solid #FCA5A5;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn-del:hover {
+            background: #FEF2F2;
+        }
+
+        .footer {
+            margin-top: auto;
+            text-align: center;
+            padding: 20px;
+            font-size: 11.5px;
+            color: var(--text-subtle);
+            border-top: 1px solid var(--border-subtle);
+            background: #FFFFFF;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation Bar: Pure White, 64px, Sticky, Subtle Shadow -->
+    <header class="top-navbar" id="topNavComponent">
+        <div class="top-left">
+            <a href="/dashboard" class="nav-back-link">&larr; Dashboard</a>
+            <div class="logo-group">
+                <img src="/static/logos/heisco.png" alt="HEISCO">
+                <img src="/static/logos/enppi.png" alt="ENPPI">
+                <img src="/static/logos/aramco.png" alt="Saudi Aramco">
+            </div>
+            <div class="logo-vdivider"></div>
+            <div class="top-header-text">
+                <div class="top-header-sub">CENTRAL HSE OPERATIONS / Utilities Hub</div>
+                <div class="top-header-brand">HEISCO - ENPPI - SAUDI ARAMCO</div>
+            </div>
+        </div>
+
+        <div class="top-right">
+            <!-- User Display: VENKATA NAGA PRASAD -->
+            <div class="user-text">
+                <div class="user-name">{{ current_user_name }}</div>
+                <div class="user-sub">ID: {{ current_employee_id }} | ROLE: {{ current_user_role }}</div>
+            </div>
+
+            <!-- Primary Logout Button -->
+            <a href="/logout" class="btn-top-logout" id="topNavLogout">
+                <span>Sign Out</span>
+            </a>
+        </div>
+    </header>
+
+    <div class="content-container">
+        <!-- Card 1: Add New User Form -->
+        <div class="card">
+            <h2>Add Personnel User</h2>
+            <p class="sub">Configure access credentials and role authorizations in users.db.</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert-{{ 'success' if category == 'success' else 'error' }}">
+                    <span>{{ message }}</span>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <form action="/register" method="post" id="createUserForm">
+                <div class="form-group">
+                    <label class="form-label" for="username">Username</label>
+                    <input type="text" id="username" name="username" class="input-field" placeholder="e.g. j_smith" required autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <input type="password" id="password" name="password" class="input-field" placeholder="At least 4 characters" required minlength="4">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="role">Role Permission</label>
+                    <select id="role" name="role" required>
+                        <option value="officer">HSE Officer (Observations &amp; Logs)</option>
+                        <option value="supervisor">Site Supervisor (Permits &amp; Review)</option>
+                        <option value="engineer">Lead Safety Engineer (Reports &amp; Metrics)</option>
+                        <option value="admin">Administrator (Full Control)</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-submit" id="btnCreateUser">Save User Profile</button>
+            </form>
+        </div>
+
+        <!-- Card 2: Registered Users List -->
+        <div class="card">
+            <h2>Authorized Users Directory</h2>
+            <p class="sub">Active personnel and access profiles configured in the SQLite system.</p>
+
+            <table class="user-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Personnel</th>
+                        <th>Role</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td style="color: var(--text-muted); font-size: 12px;">#{{ user.id }}</td>
+                        <td>
+                            <strong>{{ user.display_name if user.display_name else user.username }}</strong>
+                            {% if user.employee_id %}
+                            <div style="font-size: 11px; color: var(--text-muted);">ID: {{ user.employee_id }} ({{ user.username }})</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="role-badge role-{{ user.role }}">
+                                {{ user.role }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if user.username != 'admin' %}
+                            <form action="/delete_user/{{ user.id }}" method="post" style="display:inline;" onsubmit="return confirm('Delete user {{ user.username }}?');">
+                                <button type="submit" class="btn-del">Delete</button>
+                            </form>
+                            {% else %}
+                            <span style="font-size: 11px; color: var(--text-subtle); font-style: italic;">Super Admin</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <footer class="footer">
+        &copy; 2026 HEISCO – ENPPI – Saudi Aramco Abqaiq Facilities (BI-10-10303) &bull; Central HSE Operations Hub
+    </footer>
+
+</body>
+</html>

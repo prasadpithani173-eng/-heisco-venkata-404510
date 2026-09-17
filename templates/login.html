@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Central HSE Operations – Sign In | HEISCO &amp; Aramco</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        :root {
+            --bg-canvas: #F8FAFC;
+            --surface-card: #FFFFFF;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --text-subtle: #94A3B8;
+            --border-subtle: #E2E8F0;
+            --border-light: #F1F5F9;
+            --aramco-green: #006C35;
+            --aramco-green-hover: #00552A;
+            --heisco-blue: #0F2C5C;
+            --danger-red: #DC2626;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 36px 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .header-title {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .logo-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .logo-bar img {
+            height: 30px;
+            object-fit: contain;
+        }
+
+        .logo-vdivider {
+            width: 1px;
+            height: 24px;
+            background: var(--border-subtle);
+        }
+
+        .header-title h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.3px;
+        }
+
+        .header-title p {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            background: var(--surface-card);
+            padding: 36px 32px;
+            border-radius: 16px;
+            border: 1px solid var(--border-subtle);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 10px 25px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .login-card h2 {
+            font-size: 19px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 6px;
+            text-align: center;
+            letter-spacing: -0.2px;
+        }
+
+        .login-card .subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .alert-error {
+            background: #FEF2F2;
+            color: #991B1B;
+            border: 1px solid #FCA5A5;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 18px;
+        }
+
+        .alert-success {
+            background: #F0FDF4;
+            color: var(--aramco-green);
+            border: 1px solid #DCFCE7;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 18px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 6px;
+        }
+
+        .input-field {
+            width: 100%;
+            height: 42px;
+            padding: 0 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            font-size: 14px;
+            color: var(--text-main);
+            background: #FFFFFF;
+            outline: none;
+            transition: all 0.15s ease;
+        }
+
+        .input-field:focus {
+            border-color: var(--aramco-green);
+            box-shadow: 0 0 0 3px rgba(0, 108, 53, 0.1);
+        }
+
+        .btn-login {
+            width: 100%;
+            height: 44px;
+            background: var(--aramco-green);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 14.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            margin-top: 8px;
+        }
+
+        .btn-login:hover {
+            background: var(--aramco-green-hover);
+        }
+
+        .card-footer {
+            margin-top: 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12.5px;
+            border-top: 1px solid var(--border-subtle);
+            padding-top: 16px;
+        }
+
+        .card-footer a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.15s ease;
+        }
+
+        .card-footer a:hover {
+            color: var(--text-main);
+        }
+
+        .credentials-box {
+            margin-top: 20px;
+            background: var(--surface-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 12px;
+            color: var(--text-muted);
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+
+        .credentials-box strong {
+            color: var(--text-main);
+            font-size: 12px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .credentials-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .cred-chip {
+            background: var(--border-light);
+            border: 1px solid var(--border-subtle);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11.5px;
+            color: var(--text-main);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-align: center;
+        }
+
+        .cred-chip:hover {
+            background: #E2E8F0;
+            border-color: #CBD5E1;
+        }
+
+        .footer-text {
+            margin-top: 28px;
+            font-size: 12px;
+            color: var(--text-subtle);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-title">
+        <div class="logo-bar">
+            <img src="/static/logos/heisco.png" alt="HEISCO Logo">
+            <div class="logo-vdivider"></div>
+            <img src="/static/logos/enppi.png" alt="ENPPI Logo">
+            <div class="logo-vdivider"></div>
+            <img src="/static/logos/aramco.png" alt="Saudi Aramco Logo">
+        </div>
+        <h1>Central HSE Operations Hub</h1>
+        <p>HEISCO &bull; ENPPI &bull; SAUDI ARAMCO</p>
+    </div>
+
+    <div class="login-card">
+        <h2>System Sign-In</h2>
+        <p class="subtitle">Enter your authorized HSE credentials to continue</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert-{{ 'success' if category == 'success' else 'error' }}">
+                <span>{{ message }}</span>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form action="/login" method="post" id="loginForm">
+            <div class="form-group">
+                <label class="form-label" for="username">Username</label>
+                <input type="text" id="username" name="username" class="input-field" placeholder="e.g. admin" value="admin" required autofocus autocomplete="username">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">Password</label>
+                <input type="password" id="password" name="password" class="input-field" placeholder="••••••••" value="heisco123" required autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="btn-login" id="btnLogin">Sign In to Dashboard</button>
+
+            <div class="card-footer">
+                <a href="/reset_password" id="linkForgotPassword">Reset Password</a>
+                <a href="/reset-admin-now" style="color: var(--aramco-green); font-weight: 600;">Reset Admin</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="credentials-box">
+        <strong>Quick Access Personnel (users.db):</strong>
+        <div class="credentials-grid">
+            <div class="cred-chip" onclick="document.getElementById('username').value='admin'; document.getElementById('password').value='heisco123';" title="Click to fill">admin (Admin)</div>
+            <div class="cred-chip" onclick="document.getElementById('username').value='officer'; document.getElementById('password').value='officer123';" title="Click to fill">officer (Officer)</div>
+            <div class="cred-chip" onclick="document.getElementById('username').value='supervisor'; document.getElementById('password').value='super123';" title="Click to fill">supervisor (Supv)</div>
+            <div class="cred-chip" onclick="document.getElementById('username').value='engineer'; document.getElementById('password').value='eng123';" title="Click to fill">engineer (Eng)</div>
+        </div>
+    </div>
+
+    <div class="footer-text">
+        &copy; 2026 HEISCO – Saudi Aramco Abqaiq Facilities (BI-10-10303) &bull; Central HSE Operations
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,7 @@
+flask
+python-docx
+python-pptx
+pandas
+openpyxl
+pillow
+werkzeug

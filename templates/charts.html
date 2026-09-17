@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSE Performance Analytics &amp; KPI Charts – Central HSE Operations</title>
+    <!-- Chart.js via CDN for responsive client-side chart generation -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        :root {
+            --bg-canvas: #F8FAFC;
+            --surface-card: #FFFFFF;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --text-subtle: #94A3B8;
+            --border-subtle: #E2E8F0;
+            --border-light: #F1F5F9;
+            --aramco-green: #006C35;
+            --aramco-green-hover: #00552A;
+            --heisco-blue: #0F2C5C;
+            --danger-red: #DC2626;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-weight: 500;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Top Navigation Bar: Pure White, 64px, Sticky, Subtle Shadow */
+        .top-navbar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            height: 64px;
+            background: #FFFFFF;
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 0 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+        }
+
+        .top-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .nav-back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-subtle);
+            background: #FFFFFF;
+            transition: all 0.15s ease;
+        }
+
+        .nav-back-link:hover {
+            background: #F1F5F9;
+            color: var(--text-main);
+        }
+
+        .logo-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-group img {
+            height: 22px;
+            object-fit: contain;
+        }
+
+        .logo-vdivider {
+            width: 1px;
+            height: 24px;
+            background: var(--border-subtle);
+        }
+
+        .top-header-text {
+            line-height: 1.25;
+        }
+
+        .top-header-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        .top-header-brand {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--heisco-blue);
+            letter-spacing: -0.2px;
+        }
+
+        .top-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-text {
+            text-align: right;
+            line-height: 1.25;
+        }
+
+        .user-name {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.2px;
+        }
+
+        .user-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-top: 1px;
+        }
+
+        .btn-top-logout {
+            background: #FFFFFF;
+            color: var(--danger-red);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 12px;
+            padding: 7px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .btn-top-logout:hover {
+            background: #FEF2F2;
+            border-color: #FCA5A5;
+        }
+
+        /* Main Container: Apple / Linear clean layout */
+        .main-container {
+            width: 1140px;
+            max-width: 95%;
+            margin: 32px auto 60px;
+        }
+
+        .page-intro {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .card-header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #F0FDF4;
+            color: var(--aramco-green);
+            border: 1px solid #DCFCE7;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 20px;
+            margin-bottom: 8px;
+        }
+
+        .page-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.3px;
+        }
+
+        .page-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            font-weight: 400;
+        }
+
+        /* Stats Banner */
+        .stats-banner {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .stats-banner {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .stat-card {
+            background: var(--surface-card);
+            padding: 16px 18px;
+            border-radius: 16px;
+            border: 1px solid var(--border-subtle);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .stat-val {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.3px;
+        }
+
+        .stat-label {
+            font-size: 11.5px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Chart Grid: 2x2 Clean Cards */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 860px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-card {
+            background: var(--surface-card);
+            padding: 22px;
+            border-radius: 16px;
+            border: 1px solid var(--border-subtle);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-card h3 {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 4px;
+            letter-spacing: -0.2px;
+        }
+
+        .chart-card p.sub {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            font-weight: 400;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        .footer {
+            margin-top: auto;
+            text-align: center;
+            padding: 18px;
+            font-size: 11.5px;
+            color: var(--text-subtle);
+            border-top: 1px solid var(--border-subtle);
+            background: #FFFFFF;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation Bar: Pure White, 64px, Sticky, Subtle Shadow -->
+    <header class="top-navbar" id="topNavComponent">
+        <div class="top-left">
+            <a href="/dashboard" class="nav-back-link">&larr; Dashboard</a>
+            <div class="logo-group">
+                <img src="/static/logos/heisco.png" alt="HEISCO">
+                <img src="/static/logos/enppi.png" alt="ENPPI">
+                <img src="/static/logos/aramco.png" alt="Saudi Aramco">
+            </div>
+            <div class="logo-vdivider"></div>
+            <div class="top-header-text">
+                <div class="top-header-sub">CENTRAL HSE OPERATIONS / Utilities Hub</div>
+                <div class="top-header-brand">HEISCO - ENPPI - SAUDI ARAMCO</div>
+            </div>
+        </div>
+
+        <div class="top-right">
+            <!-- User Display: VENKATA NAGA PRASAD -->
+            <div class="user-text">
+                <div class="user-name">{{ current_user_name }}</div>
+                <div class="user-sub">ID: {{ current_employee_id }} | ROLE: {{ current_user_role }}</div>
+            </div>
+
+            <!-- Primary Logout Button -->
+            <a href="/logout" class="btn-top-logout" id="topNavLogout">
+                <span>Sign Out</span>
+            </a>
+        </div>
+    </header>
+
+    <div class="main-container">
+        
+        <div class="page-intro">
+            <div>
+                <div class="card-header-badge">
+                    Operational Intelligence &bull; BI-10-10303
+                </div>
+                <h1 class="page-title">HSE Performance &amp; KPI Analytics</h1>
+                <p class="page-desc">Debottleneck Production Facilities Abqaiq &bull; Real-time Operational Telemetry</p>
+            </div>
+        </div>
+
+        <!-- Quick Stats Banner -->
+        <div class="stats-banner">
+            <div class="stat-card">
+                <div class="stat-val">2,485,210</div>
+                <div class="stat-label">Safe Man-Hours (Zero LTI)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val" style="color: var(--aramco-green);">98.4%</div>
+                <div class="stat-label">Action Item Closure Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val">142</div>
+                <div class="stat-label">Leading Observations Logged</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val">0</div>
+                <div class="stat-label">Lost Time Injuries (LTI)</div>
+            </div>
+        </div>
+
+        <!-- Charts 2x2 Grid -->
+        <div class="chart-grid">
+            <!-- Chart 1: Safe Man-Hours Cumulative Trend -->
+            <div class="chart-card">
+                <h3>Safe Man-Hours Cumulative Trend</h3>
+                <p class="sub">Progressive safe project execution hours across weekly reporting periods.</p>
+                <div class="chart-wrapper">
+                    <canvas id="manHoursChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 2: Observations by Category -->
+            <div class="chart-card">
+                <h3>Observations by Category</h3>
+                <p class="sub">Distribution of proactive site safety findings by operational domain.</p>
+                <div class="chart-wrapper">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 3: Action Tracking Status -->
+            <div class="chart-card">
+                <h3>Action Tracking Closure (Closed vs Open)</h3>
+                <p class="sub">Resolution status of weekly site observations and corrective actions.</p>
+                <div class="chart-wrapper">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 4: Incident Classification -->
+            <div class="chart-card">
+                <h3>Incident Classification Hierarchy</h3>
+                <p class="sub">Safety record demonstrating zero LTI across construction and tie-in phases.</p>
+                <div class="chart-wrapper">
+                    <canvas id="incidentChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        &copy; 2026 HEISCO – ENPPI – Saudi Aramco Abqaiq Facilities (BI-10-10303) &bull; Central HSE Operations Hub
+    </footer>
+
+    <script>
+        // 1. Man Hours Trend
+        new Chart(document.getElementById('manHoursChart'), {
+            type: 'line',
+            data: {
+                labels: ['Week 31', 'Week 32', 'Week 33', 'Week 34', 'Week 35', 'Week 36'],
+                datasets: [{
+                    label: 'Cumulative Safe Hours',
+                    data: [2150000, 2220000, 2295000, 2360000, 2420000, 2485210],
+                    borderColor: '#006C35',
+                    backgroundColor: 'rgba(0, 108, 53, 0.08)',
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.35,
+                    pointBackgroundColor: '#006C35',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        grid: { color: '#F1F5F9' },
+                        ticks: {
+                            callback: function(v) { return (v / 1000000).toFixed(2) + 'M'; }
+                        }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // 2. Observations by Category
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'bar',
+            data: {
+                labels: ['PPE', 'Housekeeping', 'Work at Height', 'Electrical', 'Permit to Work', 'Excavation'],
+                datasets: [{
+                    label: 'Count',
+                    data: [38, 29, 24, 18, 21, 12],
+                    backgroundColor: ['#0F2C5C', '#006C35', '#0284C7', '#475569', '#0D9488', '#64748B'],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { color: '#F1F5F9' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // 3. Status Chart (Closed vs Open)
+        new Chart(document.getElementById('statusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Closed Corrective Actions', 'Open / In-Progress Actions'],
+                datasets: [{
+                    data: [136, 6],
+                    backgroundColor: ['#006C35', '#E2E8F0'],
+                    borderWidth: 2,
+                    borderColor: '#FFFFFF'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+
+        // 4. Incident Classification
+        new Chart(document.getElementById('incidentChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Near Miss', 'First Aid', 'Medical Treatment', 'Lost Time Injury (LTI)', 'Fatalities'],
+                datasets: [{
+                    label: 'Events Count',
+                    data: [14, 2, 0, 0, 0],
+                    backgroundColor: ['#0284C7', '#006C35', '#64748B', '#DC2626', '#7F1D1D'],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { color: '#F1F5F9' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

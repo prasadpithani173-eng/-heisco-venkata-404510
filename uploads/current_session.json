@@ -1,0 +1,706 @@
+{
+  "processed": [
+    {
+      "sn": 1,
+      "inspection_id": "HSCO-OB-01",
+      "area": "GOSP- 06",
+      "finding": "Supervisor not using mandatory PPE (Helmet & safety glasses) while supervising grinding work.",
+      "corrective_action": "The supervisor was instructed to always wear the mandatory helmet and safety glasses in the work area.",
+      "observation_date": "29/08/2026",
+      "responsible_person": "WPR/Foreman",
+      "category": "PPE",
+      "status": "Closed",
+      "date_closed": "29/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Major",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Major",
+      "remarks": "",
+      "observed_by": "SHEMEER SHAMSUDE",
+      "status_by": "ALAA ABDELGHANY",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 2,
+      "inspection_id": "HSCO-OB-02",
+      "area": "GOSP- 06",
+      "finding": "Hot work (cutting/grinding) area was not barricaded or protected with a fire blanket.",
+      "corrective_action": "Instructed the Fire Watcher to properly cover the activity with a fire blanket and barricade the area.",
+      "observation_date": "29/08/2026",
+      "responsible_person": "Site Supervisor",
+      "category": "Welding & Cutting Operation",
+      "status": "Closed",
+      "date_closed": "29/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Major",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Major",
+      "remarks": "",
+      "observed_by": "SHEMEER SHAMSUDE",
+      "status_by": "ALAA ABDELGHANY",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 3,
+      "inspection_id": "HSCO-OB-03",
+      "area": "GOSP- 06",
+      "finding": "Helper was standing on an unsecured small metal piece while a fitter was grinding it, placing his foot in the line of fire.",
+      "corrective_action": "Instructed the Fitter and Helper to secure the workpiece with a proper tool (vise/clamp) and to avoid being in the line of fire.",
+      "observation_date": "29/08/2026",
+      "responsible_person": "Electrician",
+      "category": "Positions of People (Behavioral)",
+      "status": "Closed",
+      "date_closed": "29/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Major",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Major",
+      "remarks": "",
+      "observed_by": "SHEMEER SHAMSUDE",
+      "status_by": "ALAA ABDELGHANY",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 4,
+      "inspection_id": "HSCO-OB-04",
+      "area": "GOSP - 05",
+      "finding": "Protruding nails were not removed or bent from dismantled wooden boxes before disposal.",
+      "corrective_action": "Workers were instructed to remove or bend all protruding nails from wood waste before disposal.",
+      "observation_date": "29/08/2026",
+      "responsible_person": "Site Engineer",
+      "category": "Sharp Edge Protection",
+      "status": "Closed",
+      "date_closed": "29/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Minor",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Minor",
+      "remarks": "",
+      "observed_by": "MOHAMED AARIF",
+      "status_by": "AL MOATASEMBELLAH",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 5,
+      "inspection_id": "HSCO-OB-05",
+      "area": "GOSP - 05",
+      "finding": "A portable water tank was found unattended at the workplace.",
+      "corrective_action": "The unattended water tank was removed from the workplace.",
+      "observation_date": "29/08/2026",
+      "responsible_person": "Mechanical Engineer",
+      "category": "Housekeeping & Material Arrangement",
+      "status": "Closed",
+      "date_closed": "29/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Minor",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Minor",
+      "remarks": "",
+      "observed_by": "MOHAMED AARIF",
+      "status_by": "AL MOATASEMBELLAH",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 6,
+      "inspection_id": "HSCO-OB-06",
+      "area": "GOSP - 05",
+      "finding": "During chipping activity, the designated Fire Watcher was absent from his post.",
+      "corrective_action": "The Fire Watcher was instructed to remain at the hot work location and continuously monitor the activity.",
+      "observation_date": "29/08/2026",
+      "responsible_person": "Civil Engineer",
+      "category": "Welding & Cutting Operation",
+      "status": "Closed",
+      "date_closed": "29/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Major",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Major",
+      "remarks": "",
+      "observed_by": "MOHAMED AARIF",
+      "status_by": "AL MOATASEMBELLAH",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 7,
+      "inspection_id": "HSCO-OB-07",
+      "area": "GOSP - 05",
+      "finding": "Scaffold tag was found with an incorrect inspection date.",
+      "corrective_action": "The scaffold tag was corrected with the proper date as per the two-week standard.",
+      "observation_date": "29/08/2026",
+      "responsible_person": "Electrician",
+      "category": "Scaffolding",
+      "status": "Closed",
+      "date_closed": "29/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Minor",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Minor",
+      "remarks": "",
+      "observed_by": "MOHAMED AARIF",
+      "status_by": "AL MOATASEMBELLAH",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 8,
+      "inspection_id": "HSCO-OB-08",
+      "area": "GOSP - 05",
+      "finding": "An air blower was being used for dust cleaning without any dust control measures (e.g., water suppression).",
+      "corrective_action": "Effective dust control measures were implemented before work was allowed to resume.",
+      "observation_date": "29/08/2026",
+      "responsible_person": "Civil Supervisor",
+      "category": "Housekeeping & Material Arrangement",
+      "status": "Closed",
+      "date_closed": "29/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Minor",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Minor",
+      "remarks": "",
+      "observed_by": "MOHAMED AARIF",
+      "status_by": "AL MOATASEMBELLAH",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 9,
+      "inspection_id": "HSCO-OB-09",
+      "area": "GOSP - 05",
+      "finding": "Personnel were off-loading steel materials at night without wearing clear safety glasses.",
+      "corrective_action": "All personnel were instructed to wear clear safety glasses for night work.",
+      "observation_date": "29/08/2026",
+      "responsible_person": "Site Engineer",
+      "category": "PPE",
+      "status": "Closed",
+      "date_closed": "29/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Minor",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Minor",
+      "remarks": "",
+      "observed_by": "MOHAMED AARIF",
+      "status_by": "AL MOATASEMBELLAH",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 10,
+      "inspection_id": "HSCO-OB-10",
+      "area": "GOSP - 02",
+      "finding": "Compactor operator was working at a high speed despite hot weather conditions, increasing heat stress risk.",
+      "corrective_action": "The operator was coached on the dangers of heat stress and instructed to work at a safe pace according to conditions.",
+      "observation_date": "29/08/2026",
+      "responsible_person": "Mechanical Engineer",
+      "category": "Worksite Medical Facilities and Related Requirements",
+      "status": "Closed",
+      "date_closed": "29/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Major",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Major",
+      "remarks": "",
+      "observed_by": "RAKIB AJAMIN",
+      "status_by": "OSAMA ABDELRAHMAN",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 11,
+      "inspection_id": "HSCO-OB-11",
+      "area": "GOSP - 02",
+      "finding": "A compressor was in use without being properly grounded.",
+      "corrective_action": "The compressor was immediately taken out of service until it was properly grounded.",
+      "observation_date": "29/08/2026",
+      "responsible_person": "Civil Engineer",
+      "category": "Electrical",
+      "status": "Closed",
+      "date_closed": "29/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Major",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Major",
+      "remarks": "",
+      "observed_by": "RAKIB AJAMIN",
+      "status_by": "OSAMA ABDELRAHMAN",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 12,
+      "inspection_id": "HSCO-OB-12",
+      "area": "GOSP - 02",
+      "finding": "A compressor was found with a missing pre-use inspection checklist.",
+      "corrective_action": "The supervisor was instructed not to use the equipment until a proper pre-use inspection is completed and documented.",
+      "observation_date": "29/08/2026",
+      "responsible_person": "Rigger 3",
+      "category": "Inspection",
+      "status": "Closed",
+      "date_closed": "29/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Minor",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Minor",
+      "remarks": "",
+      "observed_by": "RAKIB AJAMIN",
+      "status_by": "OSAMA ABDELRAHMAN",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 13,
+      "inspection_id": "HSCO-OB-13",
+      "area": "GOSP - 02",
+      "finding": "SIF Modification activity was ongoing without the required supervision.",
+      "corrective_action": "The job was stopped until the responsible supervisor was present at the worksite.",
+      "observation_date": "29/08/2026",
+      "responsible_person": "Site Supervisor",
+      "category": "Permit To Work",
+      "status": "Closed",
+      "date_closed": "29/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Major",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Major",
+      "remarks": "",
+      "observed_by": "RAKIB AJAMIN",
+      "status_by": "OSAMA ABDELRAHMAN",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 14,
+      "inspection_id": "HSCO-OB-14",
+      "area": "GOSP - 02",
+      "finding": "Personnel were working without an umbrella during an 'Orange Flag' (high heat) condition.",
+      "corrective_action": "Work was stopped and umbrellas were provided to the workers as per heat stress plan requirements.",
+      "observation_date": "29/08/2026",
+      "responsible_person": "Electrician",
+      "category": "Worksite Medical Facilities and Related Requirements",
+      "status": "Closed",
+      "date_closed": "29/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Major",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Major",
+      "remarks": "",
+      "observed_by": "RAKIB AJAMIN",
+      "status_by": "OSAMA ABDELRAHMAN",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 15,
+      "inspection_id": "HSCO-OB-15",
+      "area": "GOSP - 02",
+      "finding": "Unauthorized personnel were observed standing under a suspended load during a lifting operation.",
+      "corrective_action": "The lifting area was immediately cleared and re-barricaded to prevent unauthorized entry.",
+      "observation_date": "29/08/2026",
+      "responsible_person": "Civil Supervisor",
+      "category": "Positions of People (Behavioral)",
+      "status": "Closed",
+      "date_closed": "29/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Major",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Major",
+      "remarks": "",
+      "observed_by": "RAKIB AJAMIN",
+      "status_by": "OSAMA ABDELRAHMAN",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 16,
+      "inspection_id": "HSCO-OB-16",
+      "area": "GOSP - 03",
+      "finding": "Rigging softeners used for sharp edge protection on steel structures were not long enough to protect the web slings from damage.",
+      "corrective_action": "The rigger was instructed to use softeners of the proper length that cover all sharp edges before lifting.",
+      "observation_date": "30/08/2026",
+      "responsible_person": "Site Engineer",
+      "category": "Cranes & Heavy Lifting",
+      "status": "Closed",
+      "date_closed": "30/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Major",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Major",
+      "remarks": "",
+      "observed_by": "BILAL SAEED MUHAMM",
+      "status_by": "AAFAQ AHMAD",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 17,
+      "inspection_id": "HSCO-OB-17",
+      "area": "GOSP - 03",
+      "finding": "An electrical cable was routed on the ground where a steel assembly was in progress, creating a damage risk.",
+      "corrective_action": "The electrical cable was relocated away from the work area to protect it from damage.",
+      "observation_date": "30/08/2026",
+      "responsible_person": "Mechanical Engineer",
+      "category": "Electrical",
+      "status": "Closed",
+      "date_closed": "30/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Minor",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Minor",
+      "remarks": "",
+      "observed_by": "BILAL SAEED MUHAMM",
+      "status_by": "AAFAQ AHMAD",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 18,
+      "inspection_id": "HSCO-OB-18",
+      "area": "GOSP - 03",
+      "finding": "Excavation was proceeding with a blunt pickaxe, which is an inefficient and unsafe tool for the task.",
+      "corrective_action": "The blunt hand tool was replaced with a new, sharp pickaxe suitable for the work.",
+      "observation_date": "30/08/2026",
+      "responsible_person": "Civil Engineer",
+      "category": "Hand & Power Tools",
+      "status": "Closed",
+      "date_closed": "30/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Minor",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Minor",
+      "remarks": "",
+      "observed_by": "BILAL SAEED MUHAMM",
+      "status_by": "AAFAQ AHMAD",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 19,
+      "inspection_id": "HSCO-OB-19",
+      "area": "GOSP - 03",
+      "finding": "High Heat Stress Index (Category IV) was observed, but work continued.",
+      "corrective_action": "The job was immediately stopped until the heat stress category returned to a safe level.",
+      "observation_date": "30/08/2026",
+      "responsible_person": "WPR/Foreman",
+      "category": "Worksite Medical Facilities and Related Requirements",
+      "status": "Closed",
+      "date_closed": "30/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Major",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Major",
+      "remarks": "",
+      "observed_by": "BILAL SAEED MUHAMM",
+      "status_by": "AAFAQ AHMAD",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 20,
+      "inspection_id": "HSCO-OB-20",
+      "area": "GOSP - 03",
+      "finding": "Backfill material was unloaded less than 0.6 meters from the edge of an excavation.",
+      "corrective_action": "The operator was instructed to always maintain a minimum distance of 0.6 meters from the excavation edge when placing spoil or materials.",
+      "observation_date": "30/08/2026",
+      "responsible_person": "Site Supervisor",
+      "category": "Trenching/Excavating & Shoring",
+      "status": "Closed",
+      "date_closed": "30/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Major",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Major",
+      "remarks": "",
+      "observed_by": "BILAL SAEED MUHAMM",
+      "status_by": "AAFAQ AHMAD",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 21,
+      "inspection_id": "HSCO-OB-21",
+      "area": "GOSP - 03",
+      "finding": "The location mentioned on a cable locating sketch for a cutting permit was incorrect.",
+      "corrective_action": "The permit was rescinded. The excavation point was re-scanned, and a new, correct sketch was made before work was re-authorized.",
+      "observation_date": "30/08/2026",
+      "responsible_person": "Electrician",
+      "category": "Permit To Work",
+      "status": "Closed",
+      "date_closed": "30/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Major",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Major",
+      "remarks": "",
+      "observed_by": "BILAL SAEED MUHAMM",
+      "status_by": "AAFAQ AHMAD",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 22,
+      "inspection_id": "HSCO-OB-22",
+      "area": "GOSP - 03",
+      "finding": "No emergency eyewash station was available in the saltwater work area.",
+      "corrective_action": "A portable, shaded eyewash station was installed in a clearly marked, accessible location.",
+      "observation_date": "30/08/2026",
+      "responsible_person": "Civil Supervisor",
+      "category": "Worksite Medical Facilities and Related Requirements",
+      "status": "Closed",
+      "date_closed": "30/08/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Major",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Major",
+      "remarks": "",
+      "observed_by": "BILAL SAEED MUHAMM",
+      "status_by": "AAFAQ AHMAD",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 23,
+      "inspection_id": "HSCO-OB-23",
+      "area": "LAYDOWN",
+      "finding": "Scaffolding material was stored at the edge of an excavation, creating a surcharge load.",
+      "corrective_action": "All materials were removed from the edge of the excavation to a designated storage area.",
+      "observation_date": "03/09/2026",
+      "responsible_person": "Scaffolding Supervisor",
+      "category": "Scaffolding",
+      "status": "Closed",
+      "date_closed": "03/09/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Major",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Major",
+      "remarks": "",
+      "observed_by": "AAMIR SADDIQUE",
+      "status_by": "IBRAHIM MOHAMED",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    },
+    {
+      "sn": 24,
+      "inspection_id": "HSCO-OB-24",
+      "area": "LAYDOWN",
+      "finding": "Wooden planks with protruding nails were found in the work area.",
+      "corrective_action": "All wood with protruding nails was collected, and the nails were removed or bent over.",
+      "observation_date": "03/09/2026",
+      "responsible_person": "Rigger 3",
+      "category": "Housekeeping & Material Arrangement",
+      "status": "Closed",
+      "date_closed": "03/09/2026",
+      "responsible_company": "HEISCO",
+      "assignee_company": "HEISCO",
+      "observation_type": "Minor",
+      "jsl_observation_type": "Unsafe Condition",
+      "doc_type": "Minor",
+      "remarks": "",
+      "observed_by": "AAMIR SADDIQUE",
+      "status_by": "IBRAHIM MOHAMED",
+      "status_by_role": "Engineer",
+      "reviewed_by": "AHMED GHALWASH"
+    }
+  ],
+  "names_mapping": {
+    "GOSP03": {
+      "location_display": "GOSP - 03",
+      "safety_officer": "BILAL SAEED MUHAMM",
+      "supervisor": "EMAD KAMAL",
+      "engineer": "AAFAQ AHMAD",
+      "safety_officers": [
+        "BILAL SAEED MUHAMM"
+      ],
+      "supervisors": [
+        "EMAD KAMAL"
+      ],
+      "engineers": [
+        "AAFAQ AHMAD"
+      ]
+    },
+    "GOSP3": {
+      "location_display": "GOSP-3",
+      "safety_officer": "BILAL SAEED MUHAMM",
+      "supervisor": "EMAD KAMAL",
+      "engineer": "AAFAQ AHMAD",
+      "safety_officers": [
+        "BILAL SAEED MUHAMM"
+      ],
+      "supervisors": [
+        "EMAD KAMAL"
+      ],
+      "engineers": [
+        "AAFAQ AHMAD"
+      ]
+    },
+    "GOSP02": {
+      "location_display": "GOSP - 02",
+      "safety_officer": "RAKIB AJAMIN",
+      "supervisor": "AHMED GADELKARIM",
+      "engineer": "OSAMA ABDELRAHMAN",
+      "safety_officers": [
+        "RAKIB AJAMIN"
+      ],
+      "supervisors": [
+        "AHMED GADELKARIM"
+      ],
+      "engineers": [
+        "OSAMA ABDELRAHMAN"
+      ]
+    },
+    "GOSP2": {
+      "location_display": "GOSP-2",
+      "safety_officer": "RAKIB AJAMIN",
+      "supervisor": "AHMED GADELKARIM",
+      "engineer": "OSAMA ABDELRAHMAN",
+      "safety_officers": [
+        "RAKIB AJAMIN"
+      ],
+      "supervisors": [
+        "AHMED GADELKARIM"
+      ],
+      "engineers": [
+        "OSAMA ABDELRAHMAN"
+      ]
+    },
+    "GOSP05": {
+      "location_display": "GOSP - 05",
+      "safety_officer": "MOHAMED AARIF",
+      "supervisor": "GAMAL SHAWKY",
+      "engineer": "AL MOATASEMBELLAH",
+      "safety_officers": [
+        "MOHAMED AARIF"
+      ],
+      "supervisors": [
+        "GAMAL SHAWKY"
+      ],
+      "engineers": [
+        "AL MOATASEMBELLAH"
+      ]
+    },
+    "GOSP5": {
+      "location_display": "GOSP-5",
+      "safety_officer": "MOHAMED AARIF",
+      "supervisor": "GAMAL SHAWKY",
+      "engineer": "AL MOATASEMBELLAH",
+      "safety_officers": [
+        "MOHAMED AARIF"
+      ],
+      "supervisors": [
+        "GAMAL SHAWKY"
+      ],
+      "engineers": [
+        "AL MOATASEMBELLAH"
+      ]
+    },
+    "GOSP06": {
+      "location_display": "GOSP - 06",
+      "safety_officer": "SHEMEER SHAMSUDE",
+      "supervisor": "AYMAN SALAHELDIN",
+      "engineer": "ALAA ABDELGHANY",
+      "safety_officers": [
+        "SHEMEER SHAMSUDE"
+      ],
+      "supervisors": [
+        "AYMAN SALAHELDIN"
+      ],
+      "engineers": [
+        "ALAA ABDELGHANY"
+      ]
+    },
+    "GOSP6": {
+      "location_display": "GOSP-6",
+      "safety_officer": "SHEMEER SHAMSUDE",
+      "supervisor": "AYMAN SALAHELDIN",
+      "engineer": "ALAA ABDELGHANY",
+      "safety_officers": [
+        "SHEMEER SHAMSUDE"
+      ],
+      "supervisors": [
+        "AYMAN SALAHELDIN"
+      ],
+      "engineers": [
+        "ALAA ABDELGHANY"
+      ]
+    },
+    "LAYDOWN": {
+      "location_display": "LAYDOWN",
+      "safety_officer": "AAMIR SADDIQUE",
+      "supervisor": "RASHEED MAKHMOOR",
+      "engineer": "IBRAHIM MOHAMED",
+      "safety_officers": [
+        "AAMIR SADDIQUE"
+      ],
+      "supervisors": [
+        "RASHEED MAKHMOOR"
+      ],
+      "engineers": [
+        "IBRAHIM MOHAMED"
+      ]
+    }
+  },
+  "weekly_filename": "Weekly_Observation_Sample.xlsx",
+  "names_filename": "Names_Locations_Sample.xlsx",
+  "activity_filename": "Weekly_HSE_Activity_Sample.xlsx",
+  "activity_data": {
+    "site_activities": {
+      "GOSP-05": [
+        "Formwork, rebar fixing, manual excavation, and concrete pouring/masonry activities.",
+        "Backfilling, soil compaction, and surface preparation works.",
+        "Fit-up, tack welding, pipe alignment, asset inspection, and steel structure assembly/erection."
+      ],
+      "GOSP-03": [
+        "Installation of concrete foundations, masonry works, concrete chipping, and survey layout.",
+        "Spoil removal, asphalt cutting/removal, manual excavation, backfilling, and compaction.",
+        "Steel structure assembly, platform erection, crane setup (500-ton), material offloading, and RTR joint heating."
+      ],
+      "GOSP-02": [
+        "Loading, unloading, material shifting, and equipment alignment/inspection.",
+        "RTR pipe jointing, masonry works, concrete chipping, backfilling, and compaction around control buildings.",
+        "Steel structure assembly and erection, including bolt tightening and torquing."
+      ],
+      "GOSP-06": [
+        "Scaffolding erection/dismantling, formwork, steel fixing, masonry, and tile installation.",
+        "Pipe spool alignment, fit-up, welding, cutting, grinding, and RTR line water filling/testing.",
+        "Asphalt cutting/removal, manual excavation, backfilling, compaction, painting, and general housekeeping."
+      ],
+      "HEISCO Laydown": [
+        "Pipe fabrication, welding, cutting, grinding, drilling, and gas cutting activities.",
+        "Loading, unloading, material shifting, and crane pad form/rebar work.",
+        "Painting works, water/diesel refilling, and water sucking/dewatering operations."
+      ]
+    },
+    "period_start": "05-09-2026",
+    "period_end": "10-09-2026",
+    "week_no": "36"
+  },
+  "reviewed_by_name": "AHMED GHALWASH",
+  "reviewed_by_date": "17/09/2026"
+}

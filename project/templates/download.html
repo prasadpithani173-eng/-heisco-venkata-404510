@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download Generated Reports - HSE Report Generator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background-color: #fcfcfc;
+      color: #1f2937;
+      line-height: 1.5;
+      padding: 32px 16px;
+    }
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      padding: 36px;
+    }
+    .success-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #dcfce7;
+      color: #15803d;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      margin-bottom: 12px;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 8px;
+    }
+    .subtext {
+      font-size: 14px;
+      color: #4b5563;
+      margin-bottom: 28px;
+    }
+    .files-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+    .file-card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .file-card:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .file-type-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 10px;
+    }
+    .tag-word {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+    .tag-excel {
+      background: #f0fdf4;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+    .file-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 6px;
+    }
+    .file-desc {
+      font-size: 12.5px;
+      color: #6b7280;
+      margin-bottom: 20px;
+      flex-grow: 1;
+    }
+    .file-meta {
+      font-size: 11.5px;
+      color: #9ca3af;
+      margin-bottom: 14px;
+    }
+    .btn-download {
+      display: block;
+      text-align: center;
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 600;
+      padding: 10px 16px;
+      border-radius: 6px;
+      transition: background-color 0.15s;
+    }
+    .btn-word {
+      background: #2563eb;
+      color: #ffffff;
+    }
+    .btn-word:hover {
+      background: #1d4ed8;
+    }
+    .btn-excel {
+      background: #16a34a;
+      color: #ffffff;
+    }
+    .btn-excel:hover {
+      background: #15803d;
+    }
+    .details-box {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 18px;
+      margin-bottom: 28px;
+    }
+    .details-box h3 {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: 10px;
+    }
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      row-gap: 8px;
+      font-size: 12.5px;
+      color: #4b5563;
+    }
+    .details-grid strong {
+      color: #111827;
+    }
+    .actions-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 20px;
+      border-top: 1px solid #f0f0f0;
+    }
+    .btn-secondary {
+      font-size: 13.5px;
+      color: #374151;
+      text-decoration: none;
+      padding: 8px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 5px;
+      background: #ffffff;
+    }
+    .btn-secondary:hover {
+      background: #f3f4f6;
+      border-color: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="download-page">
+    <div class="success-badge">
+      ✓ Generation Complete
+    </div>
+    <h1>Your HSE Reports Are Ready</h1>
+    <p class="subtext">Both the Observation Register Word document and JSL Log Sheet Excel file have been successfully created.</p>
+
+    <!-- Download Cards -->
+    <div class="files-grid">
+      <!-- File 1: Word -->
+      <div class="file-card" id="card-word-file">
+        <div>
+          <span class="file-type-tag tag-word">Word Document (.docx)</span>
+          <div class="file-name">HSE Observation Register</div>
+          <div class="file-desc">
+            Standard HEISCO register with CC Name, Ref No (<code>433001/HSE-OR/XX/2026</code>), 3 observations per page, page breaks, and signature blocks.
+          </div>
+          <div class="file-meta">
+            📄 {{ total_pages }} pages ({{ total_records }} observations)
+          </div>
+        </div>
+        <a href="/download/word" class="btn-download btn-word" id="btn-download-word">
+          📥 Download Observation Register (.docx)
+        </a>
+      </div>
+
+      <!-- File 2: Excel -->
+      <div class="file-card" id="card-excel-file">
+        <div>
+          <span class="file-type-tag tag-excel">Excel Workbook (.xlsx)</span>
+          <div class="file-name">JSL Log Sheet</div>
+          <div class="file-desc">
+            HSE Action Tracking Register with formatted summary statistics cards, Inspection IDs (<code>HSCO-OB-XX</code>), and styled status badges.
+          </div>
+          <div class="file-meta">
+            📊 14 columns, {{ total_records }} tracked actions
+          </div>
+        </div>
+        <a href="/download/excel" class="btn-download btn-excel" id="btn-download-excel">
+          📥 Download JSL Log Sheet (.xlsx)
+        </a>
+      </div>
+    </div>
+
+    <!-- Generation Details Box -->
+    <div class="details-box">
+      <h3>Applied Project Metadata</h3>
+      <div class="details-grid">
+        <div>CC Name: <strong>DEBOTTLENECK PRODUCTION FACILITIES ABQAIQ BI NO. 10-10303</strong></div>
+        <div>Reviewed By Date: <strong>{{ reviewed_by_date }}</strong></div>
+        <div>Total Pages: <strong>{{ total_pages }} (OR/01 to OR/{{ '%02d' % total_pages }})</strong></div>
+        <div>Reviewed By: <strong>{{ reviewed_by_name }}</strong></div>
+        <div>Ref Number Range: <strong>433001/HSE-OR/01/2026 to 433001/HSE-OR/{{ '%02d' % total_pages }}/2026</strong></div>
+        <div>Total Observations: <strong>{{ total_records }} items</strong></div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions-bar">
+      <a href="/preview" class="btn-secondary" id="btn-back-preview">← Back to Preview</a>
+      <a href="/upload" class="btn-secondary" id="btn-new-upload">↻ Upload New Batch</a>
+    </div>
+  </div>
+</body>
+</html>
