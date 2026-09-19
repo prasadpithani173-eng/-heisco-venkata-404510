@@ -1,296 +1,264 @@
 import re
 import datetime
-from typing import Dict, List, Any, Tuple
-
-DEFAULT_CC_NAME = "DEBOTTLENECK PRODUCTION FACILITIES ABQAIQ BI NO. 10-10303"
-DEFAULT_REF_PREFIX = "433001/HSE-OR"
-DEFAULT_YEAR = "2026"
-
-DEFAULT_ABQAIQ_MAPPING: Dict[str, Dict[str, str]] = {
-    'GOSP03': {'location_display': 'GOSP - 03', 'safety_officer': 'BILAL SAEED MUHAMM', 'supervisor': 'EMAD KAMAL', 'engineer': 'AAFAQ AHMAD', 'project_manager': 'AHMED GHALWASH'},
-    'GOSP3': {'location_display': 'GOSP-3', 'safety_officer': 'BILAL SAEED MUHAMM', 'supervisor': 'EMAD KAMAL', 'engineer': 'AAFAQ AHMAD', 'project_manager': 'AHMED GHALWASH'},
-    'GOSP02': {'location_display': 'GOSP - 02', 'safety_officer': 'RAKIB AJAMIN', 'supervisor': 'AHMED GADELKARIM', 'engineer': 'OSAMA ABDELRAHMAN', 'project_manager': 'AHMED GHALWASH'},
-    'GOSP2': {'location_display': 'GOSP-2', 'safety_officer': 'RAKIB AJAMIN', 'supervisor': 'AHMED GADELKARIM', 'engineer': 'OSAMA ABDELRAHMAN', 'project_manager': 'AHMED GHALWASH'},
-    'GOSP05': {'location_display': 'GOSP - 05', 'safety_officer': 'MOHAMED AARIF', 'supervisor': 'GAMAL SHAWKY', 'engineer': 'AL MOATASEMBELLAH', 'project_manager': 'AHMED GHALWASH'},
-    'GOSP5': {'location_display': 'GOSP-5', 'safety_officer': 'MOHAMED AARIF', 'supervisor': 'GAMAL SHAWKY', 'engineer': 'AL MOATASEMBELLAH', 'project_manager': 'AHMED GHALWASH'},
-    'GOSP06': {'location_display': 'GOSP - 06', 'safety_officer': 'SHEMEER SHAMSUDE', 'supervisor': 'AYMAN SALAHELDIN', 'engineer': 'ALAA ABDELGHANY', 'project_manager': 'AHMED GHALWASH'},
-    'GOSP6': {'location_display': 'GOSP-6', 'safety_officer': 'SHEMEER SHAMSUDE', 'supervisor': 'AYMAN SALAHELDIN', 'engineer': 'ALAA ABDELGHANY', 'project_manager': 'AHMED GHALWASH'},
-    'LAYDOWN': {'location_display': 'LAYDOWN', 'safety_officer': 'AAMIR SADDIQUE', 'supervisor': 'RASHEED MAKHMOOR', 'engineer': 'IBRAHIM MOHAMED', 'project_manager': 'AHMED GHALWASH'},
-}
+from typing import List, Dict, Any, Optional
 
 def normalize_location_key(text: Any) -> str:
-    """Normalize location strings like 'ABQ GOSP - 06' and 'GOSP- 06' to match cleanly."""
+    """Normalize location strings for consistent matching."""
     if not text:
         return ""
     s = str(text).upper().strip()
-    # Remove common prefixes like 'ABQ ', 'ABQ-', 'SAUDI ARAMCO '
-    s = re.sub(r'^(ABQ|ARAMCO|SITE|FACILITY)[\s\-_]*', '', s)
-    # Remove all non-alphanumeric chars for canonical comparison
-    canonical = re.sub(r'[^A-Z0-9]', '', s)
-    return canonical
+    s = re.sub(r'[\s\-_\./\(\)]+', '', s)
+    return s
 
-def find_matched_names(location: str, mapping: Dict[str, Dict[str, str]]) -> Dict[str, str]:
-    """Find matched Safety Officer, Supervisor, and Engineer for a location."""
-    key = normalize_location_key(location)
-    
-    # 1. Direct match in provided mapping
-    if mapping and key in mapping:
-        return mapping[key]
-        
-    # 2. Substring match in provided mapping
-    if mapping:
-        for map_key, data in mapping.items():
-            if map_key and (map_key in key or key in map_key):
-                return data
-                
-    # 3. Numeric match in provided mapping (e.g. 06, 05, 02, 03)
-    loc_numbers = re.findall(r'\d+', key)
-    if mapping and loc_numbers:
-        for map_key, data in mapping.items():
-            map_numbers = re.findall(r'\d+', map_key)
-            if loc_numbers == map_numbers:
-                return data
-
-    # 4. Fallback to default project roster for Abqaiq
-    if key in DEFAULT_ABQAIQ_MAPPING:
-        return DEFAULT_ABQAIQ_MAPPING[key]
-    for d_key, d_data in DEFAULT_ABQAIQ_MAPPING.items():
-        if d_key in key or key in d_key:
-            return d_data
-    if loc_numbers:
-        for d_key, d_data in DEFAULT_ABQAIQ_MAPPING.items():
-            d_numbers = re.findall(r'\d+', d_key)
-            if loc_numbers == d_numbers:
-                return d_data
-                
-    # Final default
-    return {
-        'location_display': location,
-        'safety_officer': '',
-        'supervisor': '',
-        'engineer': '',
-        'project_manager': 'AHMED GHALWASH'
-    }
-
-
-def parse_sortable_date(date_str: str) -> datetime.date:
-    """Parse date string into datetime.date for sorting."""
-    if not date_str:
+def parse_sortable_date(val: Any) -> datetime.date:
+    """Parse date into sortable date object."""
+    if not val:
         return datetime.date.max
-    try:
-        # DD/MM/YYYY
-        parts = date_str.split('/')
-        if len(parts) == 3:
-            return datetime.date(int(parts[2]), int(parts[1]), int(parts[0]))
-    except Exception:
-        pass
-    try:
-        dt = datetime.datetime.strptime(date_str, "%d/%m/%Y")
-        return dt.date()
-    except Exception:
-        pass
+    if isinstance(val, (datetime.datetime, datetime.date)):
+        return val if isinstance(val, datetime.date) else val.date()
+    val_str = str(val).strip()
+    for fmt in ("%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y", "%m/%d/%Y", "%d.%m.%Y"):
+        try:
+            return datetime.datetime.strptime(val_str[:10], fmt).date()
+        except Exception:
+            pass
     return datetime.date.max
 
-def process_and_map_observations(
-    raw_observations: List[Dict[str, Any]], 
-    mapping: Dict[str, Dict[str, str]]
-) -> List[Dict[str, Any]]:
+def find_matched_names(location: str, mapping: Optional[Dict[str, Dict[str, Any]]]) -> Dict[str, str]:
+    """Find matched officer and engineer names for a given location."""
+    if not mapping or not location:
+        return {'safety_officer': '', 'supervisor': '', 'engineer': ''}
+    key = normalize_location_key(location)
+    if key in mapping:
+        return mapping[key]
+    for map_key, data in mapping.items():
+        if map_key and (map_key in key or key in map_key):
+            return data
+    return {'safety_officer': '', 'supervisor': '', 'engineer': ''}
+
+def process_and_map_observations(raw_records: List[Dict[str, Any]], names_map: Optional[Any] = None) -> List[Dict[str, Any]]:
     """
-    1. Sort observations by Due Date / Observation Date
-    2. Map Protocol Fields (Location, Finding, Corrective Action, Action By, Due Date, Risk Level/Type, Status)
-    3. Auto Match or Extract Signatures:
-       - Observed By: Safety Officer (from 'Raised By' or Location Mapping)
-       - Status By: Site Engineer / Supervisor (from 'Assignee' or Location Mapping)
-       - Reviewed By: Project Manager (globally 'AHMED GHALWASH')
+    DATA INGESTION PROTOCOL:
+    Maps incoming spreadsheet records dynamically using the fallback hierarchy:
+    - 'Area' or 'Location' -> 'location'
+    - 'Finding' or 'Observation' -> 'finding'
+    - 'Corrective Action' or 'Recommendation' -> 'corrective_action'
+    - 'Assignee' or 'Action By' -> 'assignee'
+    - 'Due Date' -> 'due_date'
+    - 'Status' -> 'status'
+    - 'Risk Level' -> 'risk_level' ('Low' to 'Minor', 'Medium' and 'High' to 'Major')
     """
-    # 1. Auto Sort by Due Date / Observation Date
-    sorted_obs = sorted(
-        raw_observations, 
-        key=lambda x: parse_sortable_date(x.get('DUE_DATE') or x.get('due_date') or x.get('observation_date', ''))
-    )
-    
     processed = []
-    for idx, item in enumerate(sorted_obs, start=1):
-        # 1. Location -> Map to: LOCATION
-        loc = item.get('LOCATION') or item.get('location') or item.get('area', '')
-        matched = find_matched_names(loc, mapping)
-        
-        # Inspection ID formatted as HSCO-OR-01, HSCO-OR-02, ...
-        insp_id = f"HSCO-OR-{idx:02d}"
-        
-        # 2. Finding -> Map to: OBSERVATION
-        observation_val = item.get('OBSERVATION') or item.get('observation') or item.get('finding', '')
-        
-        # 3. Corrective Action -> Map to: RECOMMENDATION
-        recommendation_val = item.get('RECOMMENDATION') or item.get('recommendation') or item.get('corrective_action', '')
-        
-        # 4. Action By -> Map to: RESPONSIBLE ENTITY
-        resp_entity_val = item.get('RESPONSIBLE_ENTITY') or item.get('responsible_entity') or item.get('responsible_person') or item.get('action_by', '') or 'Site Supervisor'
-        if resp_entity_val.lower() in ['nan', 'none']:
-            resp_entity_val = 'Site Supervisor'
+    
+    # Optional date sort if sortable dates exist
+    try:
+        sorted_records = sorted(
+            raw_records,
+            key=lambda x: parse_sortable_date(
+                x.get('Due Date') or x.get('DUE DATE') or x.get('due_date') or x.get('Observation Date') or x.get('DATE', '')
+            )
+        )
+    except Exception:
+        sorted_records = raw_records
 
-        # 5. Due Date -> Map to: DUE DATE
-        due_date_val = item.get('DUE_DATE') or item.get('due_date') or item.get('observation_date', '')
-        if not due_date_val:
-            due_date_val = datetime.date.today().strftime("%d/%m/%Y")
-            
-        # 6. Risk Level -> Map to: TYPE (Process values: 'Low' to 'Minor', 'Medium' and 'High' to 'Major')
-        raw_type = item.get('TYPE') or item.get('type') or item.get('observation_type', '') or item.get('risk_level', '')
-        type_upper = str(raw_type).strip().upper()
-        if 'LOW' in type_upper or 'MINOR' in type_upper:
-            doc_type = 'Minor'
-        elif 'MED' in type_upper or 'HIGH' in type_upper or 'MAJOR' in type_upper or 'CRITICAL' in type_upper or 'SEVERE' in type_upper:
-            doc_type = 'Major'
+    for row in sorted_records:
+        # 1. Location fallback hierarchy
+        loc = ""
+        for k in ['Area', 'Area ', 'Location', 'LOCATION', 'area', 'location']:
+            if k in row and row[k] and str(row[k]).strip().lower() != 'nan':
+                loc = str(row[k]).strip()
+                break
+
+        # 2. Finding / Observation fallback hierarchy
+        find = ""
+        for k in ['Finding', 'Finding ', 'Observation', 'OBSERVATION', 'finding', 'observation']:
+            if k in row and row[k] and str(row[k]).strip().lower() != 'nan':
+                find = str(row[k]).strip()
+                break
+
+        # 3. Corrective Action / Recommendation fallback hierarchy
+        rec = ""
+        for k in ['Corrective Action', 'Corrective Action ', 'Recommendation', 'RECOMMENDATION', 'corrective_action', 'recommendation']:
+            if k in row and row[k] and str(row[k]).strip().lower() != 'nan':
+                rec = str(row[k]).strip()
+                break
+
+        # 4. Assignee / Action By fallback hierarchy
+        assignee = ""
+        for k in ['Assignee', 'Assignee ', 'Action By', 'Responsible Person', 'RESPONSIBLE ENTITY', 'RESPONSIBLE_ENTITY', 'assignee', 'action_by']:
+            if k in row and row[k] and str(row[k]).strip().lower() != 'nan':
+                assignee = str(row[k]).strip()
+                break
+
+        # 5. Due Date fallback hierarchy
+        due = ""
+        for k in ['Due Date', 'Due Date ', 'DUE DATE', 'due_date', 'due date', 'Observation Date', 'DATE', 'Date']:
+            if k in row and row[k] and str(row[k]).strip().lower() != 'nan':
+                due = str(row[k]).strip()
+                break
+
+        # 6. Status fallback hierarchy
+        stat = ""
+        for k in ['Status', 'STATUS', 'status', 'State', 'state']:
+            if k in row and row[k] and str(row[k]).strip().lower() != 'nan':
+                stat = str(row[k]).strip()
+                break
+        if not stat:
+            stat = "Open"
+        elif "closed" in stat.lower():
+            stat = "Closed"
         else:
-            doc_type = 'Minor' if (idx % 2 == 0) else 'Major' # sensible balanced distribution
-            
-        # JSL observation type: Unsafe Act or Unsafe Condition
-        if 'ACT' in type_upper or 'BEHAVIOR' in type_upper or 'PPE' in type_upper:
-            jsl_type = 'Unsafe Act'
+            stat = "Open"
+
+        # 7. Risk Level translation: 'Low' to 'Minor', 'Medium' and 'High' to 'Major'
+        risk = ""
+        for k in ['Risk Level', 'Risk Level ', 'Risk', 'TYPE', 'risk_level', 'risk']:
+            if k in row and row[k] and str(row[k]).strip().lower() != 'nan':
+                risk = str(row[k]).strip()
+                break
+        if not risk:
+            risk = "Low"
+
+        risk_upper = risk.upper()
+        if any(m in risk_upper for m in ["MEDIUM", "HIGH", "MAJOR", "CRITICAL", "SEVERE"]):
+            doc_type = "Major"
         else:
-            jsl_type = 'Unsafe Condition'
-            
-        # 7. Status -> Map to: STATUS
-        raw_status = str(item.get('STATUS') or item.get('status', 'Closed')).strip()
-        status_val = 'Open' if 'open' in raw_status.lower() else 'Closed'
+            doc_type = "Minor"
 
-        # 8. Source 'Raised By' -> Map to: Observed By (Safety Officer Name signature)
-        so_name = item.get('RAISED_BY') or item.get('raised_by') or item.get('observed_by', '')
-        if not so_name or str(so_name).strip().lower() in ['nan', 'none', 'safety officer']:
-            so_name = matched.get('safety_officer', '')
-        
-        # 9. Source 'Assignee' -> Map to: Status By (Site Engineer / Supervisor Name signature)
-        status_by_name = item.get('ASSIGNEE') or item.get('assignee') or item.get('status_by', '')
-        if not status_by_name or str(status_by_name).strip().lower() in ['nan', 'none', 'site engineer', 'site supervisor']:
-            eng_name = matched.get('engineer', '').strip()
-            sup_name = matched.get('supervisor', '').strip()
-            if eng_name and eng_name.lower() not in ['nan', 'none', 'site engineer']:
-                status_by_name = eng_name
-            elif sup_name and sup_name.lower() not in ['nan', 'none', 'site supervisor']:
-                status_by_name = sup_name
-            else:
-                status_by_name = ""
+        # Raised By / Observed By
+        raised = ""
+        for k in ['Raised By', 'Raised By ', 'Observed By', 'RAISED_BY', 'observed_by', 'raised_by']:
+            if k in row and row[k] and str(row[k]).strip().lower() != 'nan':
+                raised = str(row[k]).strip()
+                break
 
-        # Clean placeholder titles from names
-        for banned in ['Site Supervisor', 'Site Engineer', 'Project Manager', 'Safety Officer', 'nan', 'None']:
-            if so_name.strip().lower() == banned.lower():
-                so_name = ''
-            if status_by_name.strip().lower() == banned.lower():
-                status_by_name = ''
+        # Observation Date
+        obs_date = ""
+        for k in ['Observation Date', 'DATE', 'Date', 'observation_date', 'Due Date', 'DUE DATE']:
+            if k in row and row[k] and str(row[k]).strip().lower() != 'nan':
+                obs_date = str(row[k]).strip()
+                break
+        if not obs_date or obs_date.lower() == 'nan':
+            obs_date = datetime.date.today().strftime("%d/%m/%Y")
 
-        processed_item = {
-            # Protocol Uppercase Mappings
-            'LOCATION': loc,
-            'OBSERVATION': observation_val,
-            'RECOMMENDATION': recommendation_val,
-            'RESPONSIBLE_ENTITY': resp_entity_val,
-            'RESPONSIBLE ENTITY': resp_entity_val,
-            'DUE_DATE': due_date_val,
-            'DUE DATE': due_date_val,
-            'TYPE': doc_type,
-            'STATUS': status_val,
-            'RAISED_BY': so_name,
-            'ASSIGNEE': status_by_name,
+        # Skip rows that have neither finding nor location
+        if (not find and not loc) or (find == "nan" and loc == "nan"):
+            continue
 
-            # Standard and System Mappings
-            'sn': idx,
-            'inspection_id': insp_id,
-            'area': loc,
-            'location': loc,
-            'finding': observation_val,
-            'observation': observation_val,
-            'corrective_action': recommendation_val,
-            'recommendation': recommendation_val,
-            'observation_date': due_date_val,
-            'due_date': due_date_val,
-            'responsible_person': resp_entity_val,
-            'responsible_entity': resp_entity_val,
-            'category': item.get('category', '') or 'General',
-            'status': status_val,
-            'date_closed': item.get('date_closed') or due_date_val,
-            'responsible_company': item.get('responsible_company', 'HEISCO'),
-            'assignee_company': item.get('assignee_company', 'HEISCO'),
-            'observation_type': raw_type or jsl_type,
-            'jsl_observation_type': jsl_type,
+        item = {
+            'location': loc if loc else "N/A",
+            'finding': find if find else "No entry.",
+            'corrective_action': rec if rec else "Monitor.",
+            'assignee': assignee if assignee else "Site Team",
+            'status_by': assignee if assignee else "Site Team",
+            'due_date': due if due else "TBD",
+            'status': stat if stat else "Open",
+            'risk_level': risk if risk else "Low",
             'doc_type': doc_type,
             'type': doc_type,
-            'remarks': item.get('remarks', ''),
+            'observed_by': raised if raised else "Safety Officer",
+            'reviewed_by': 'AHMED GHALWASH',
+            'observation_date': obs_date,
 
-            # Signatures
-            'observed_by': so_name,
-            'raised_by': so_name,
-            'Dynamic_Raised_By': so_name,
-            'status_by': status_by_name,
-            'assignee': status_by_name,
-            'Dynamic_Assignee': status_by_name,
-            'status_by_role': "Site Engineer",
-            'reviewed_by': 'AHMED GHALWASH'
+            # Aliases for cross-module compatibility
+            'LOCATION': loc if loc else "N/A",
+            'OBSERVATION': find if find else "No entry.",
+            'RECOMMENDATION': rec if rec else "Monitor.",
+            'RESPONSIBLE_ENTITY': assignee if assignee else "Site Team",
+            'RESPONSIBLE ENTITY': assignee if assignee else "Site Team",
+            'DUE_DATE': due if due else "TBD",
+            'DUE DATE': due if due else "TBD",
+            'TYPE': doc_type,
+            'STATUS': stat if stat else "Open",
+            'RAISED_BY': raised if raised else "Safety Officer",
+            'ASSIGNEE': assignee if assignee else "Site Team"
         }
-        processed.append(processed_item)
+        processed.append(item)
         
     return processed
 
 def split_into_pages(
-    processed_observations: List[Dict[str, Any]], 
-    reviewed_by_date: str = "",
+    processed_items: List[Dict[str, Any]], 
+    reviewed_by_date: str = "", 
     reviewed_by_name: str = "AHMED GHALWASH"
 ) -> List[Dict[str, Any]]:
     """
-    COMPONENT GROUPING & PAGINATION LOGIC:
-    - Batches records into blocks of up to a MAXIMUM of 3 records per container unit.
-    - Generates auto-incrementing tracking index matching:
-      433001/HSE-OR/[Zero-Padded-Two-Digit-Index]/2026
-    - Sets dynamic footer signature values at the bottom of each 3-record group:
-      * Observed By: Safety officer Name: Dynamic_Raised_By
-      * Reviewed By: Project Manager Name: AHMED GHALWASH (globally hardcoded)
-      * Status By: Site Engineer Name: Dynamic_Assignee
+    COMPONENT BATCHING LOGIC:
+    - Group records into arrays containing a MAXIMUM of 3 items per card block unit.
+    - For each 3-item block container, generate an auto-incrementing sequential tracker string:
+      "Ref No: 433001/HSE-OR/[Zero-Padded-Two-Digit-Index]/2026" starting at 01.
+    - Dynamically extract 'observed_by' from row data 'Raised By', 'status_by' from row data 'Assignee',
+      and hardcode 'reviewed_by' to: 'AHMED GHALWASH'.
     """
     pages = []
     chunk_size = 3
-    total = len(processed_observations)
-    
-    for i in range(0, total, chunk_size):
-        chunk = processed_observations[i:i + chunk_size]
-        page_num = (i // chunk_size) + 1
-        page_ref_num = f"{page_num:02d}"
-        ref_no = f"{DEFAULT_REF_PREFIX}/{page_ref_num}/{DEFAULT_YEAR}"
+    for i in range(0, len(processed_items), chunk_size):
+        chunk = processed_items[i:i + chunk_size]
+        page_idx = (i // chunk_size) + 1
+        ref_no = f"433001/HSE-OR/{page_idx:02d}/2026"
         
-        # Representative date for page header
-        first_record_date = (
-            chunk[0].get('DUE_DATE') or 
-            chunk[0].get('due_date') or 
-            chunk[0].get('observation_date', '')
-        ) if chunk else ''
-        if not first_record_date:
-            first_record_date = datetime.date.today().strftime("%d/%m/%Y")
-        
-        # Dynamic footer values from chunk records
-        dynamic_raised_by = (chunk[0].get('RAISED_BY') or chunk[0].get('raised_by') or chunk[0].get('observed_by', '')) if chunk else ''
-        dynamic_assignee = (chunk[0].get('ASSIGNEE') or chunk[0].get('assignee') or chunk[0].get('status_by', '')) if chunk else ''
-        
-        group_data = {
-            'group_index': page_num,
-            'page_number': page_num,
-            'page_name': f"OR/{page_ref_num}",
-            'Generated_Ref_No': ref_no,
-            'ref_no': ref_no,
-            'cc_name': DEFAULT_CC_NAME,
-            'CC_Name': DEFAULT_CC_NAME,
-            'Dynamic_First_Record_Date': first_record_date,
-            'page_date': first_record_date,
-            'records': chunk,
-            'observations': chunk,
-            'Dynamic_Raised_By': dynamic_raised_by,
-            'observed_by': dynamic_raised_by,
-            'Dynamic_Assignee': dynamic_assignee,
-            'status_by': dynamic_assignee,
-            'status_by_role': 'Site Engineer',
-            'Reviewed_By': "AHMED GHALWASH",
-            'reviewed_by': "AHMED GHALWASH",
-            'reviewed_by_name': "AHMED GHALWASH",
-            'reviewed_by_date': reviewed_by_date or first_record_date
-        }
-        pages.append(group_data)
-        
-    return pages
+        first_date = chunk[0].get('observation_date', '') if (chunk and len(chunk) > 0) else ''
+        if not first_date or first_date == 'nan':
+            first_date = chunk[0].get('due_date', '') if (chunk and len(chunk) > 0) else ''
+        if not first_date or first_date == 'nan' or first_date == 'TBD':
+            first_date = reviewed_by_date if reviewed_by_date else datetime.date.today().strftime("%d/%m/%Y")
 
+        # Dynamically extract observed_by from chunk row data ('Raised By' / 'observed_by')
+        observed_by_name = ""
+        status_by_name = ""
+        for item in chunk:
+            if not observed_by_name:
+                v = item.get('observed_by') or item.get('Raised By') or item.get('RAISED_BY')
+                if v and str(v).strip().lower() not in ['nan', 'none', '', 'safety officer']:
+                    observed_by_name = str(v).strip()
+            if not status_by_name:
+                v = item.get('status_by') or item.get('assignee') or item.get('Assignee') or item.get('ASSIGNEE')
+                if v and str(v).strip().lower() not in ['nan', 'none', '', 'site team', 'site engineer', 'site supervisor']:
+                    status_by_name = str(v).strip()
+
+        if not observed_by_name:
+            # Fallback to any present non-empty observed_by
+            for item in chunk:
+                v = item.get('observed_by') or item.get('Raised By') or item.get('RAISED_BY')
+                if v and str(v).strip().lower() not in ['nan', 'none', '']:
+                    observed_by_name = str(v).strip()
+                    break
+        if not observed_by_name:
+            observed_by_name = "Safety Officer"
+
+        if not status_by_name:
+            # Fallback to any present non-empty assignee/status_by
+            for item in chunk:
+                v = item.get('status_by') or item.get('assignee') or item.get('Assignee') or item.get('ASSIGNEE')
+                if v and str(v).strip().lower() not in ['nan', 'none', '']:
+                    status_by_name = str(v).strip()
+                    break
+        if not status_by_name:
+            status_by_name = "Site Engineer"
+
+        page_block = {
+            'ref_no': ref_no,
+            'Generated_Ref_No': ref_no,
+            'date': first_date,
+            'page_date': first_date,
+            'Dynamic_First_Record_Date': first_date,
+            'cc_name': "DEBOTTLENECK PRODUCTION FACILITIES ABQAIQ BI NO. 10-10303",
+            'CC_Name': "DEBOTTLENECK PRODUCTION FACILITIES ABQAIQ BI NO. 10-10303",
+            'observations': chunk,
+            'records': chunk,
+            'observed_by': observed_by_name,
+            'Dynamic_Raised_By': observed_by_name,
+            'status_by': status_by_name,
+            'Dynamic_Assignee': status_by_name,
+            'status_by_role': 'Site Engineer',
+            'reviewed_by': 'AHMED GHALWASH',
+            'Reviewed_By': 'AHMED GHALWASH',
+            'reviewed_by_name': 'AHMED GHALWASH',
+            'reviewed_by_date': first_date,
+            'page_number': page_idx,
+            'group_index': page_idx,
+            'page_name': f"OR/{page_idx:02d}"
+        }
+        pages.append(page_block)
+
+    return pages
