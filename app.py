@@ -19,7 +19,8 @@ from services.excel_reader import (
     read_weekly_observation_excel,
     read_names_locations_excel,
     read_weekly_activity_excel,
-    format_date_for_jsl
+    format_date_for_jsl,
+    parse_date_value
 )
 from services.mapping import process_and_map_observations, split_into_pages
 from services.or_generator import generate_observation_register_doc
@@ -63,7 +64,12 @@ def serve_assets(filename):
 
 @app.context_processor
 def inject_user_context():
-    username = session.get("username") or session.get("user") or "admin"
+    raw_user = session.get("username") or session.get("user") or "admin"
+    if isinstance(raw_user, dict):
+        username = raw_user.get("username") or raw_user.get("name") or "admin"
+    else:
+        username = str(raw_user or "admin")
+        
     role = session.get("role", "admin").upper()
     
     if username == "admin":
@@ -447,7 +453,7 @@ def preview_page():
         date_range = "N/A"
         default_reviewed_date = datetime.date.today().strftime("%d/%m/%Y")
 
-    report_groups = split_into_pages(processed, reviewed_by_date=default_reviewed_date, reviewed_by_name="AHMED GHALWASH")
+    report_groups = state.get("report_groups") or split_into_pages(processed, reviewed_by_date=default_reviewed_date, reviewed_by_name="AHMED GHALWASH")
     total_pages = len(report_groups)
 
     period_start = activity_data.get("period_start", "05-09-2026") if activity_data else "05-09-2026"
@@ -616,201 +622,343 @@ def generate_signage():
 @app.route("/generate_observations_report", methods=["POST"])
 @login_required
 def generate_observations_report():
-    """
-    Observations Report Automation (Word .docx)
-    - Auto-sort by date
-    - Auto-generate Ref No (433001/HSE-OR/XX/2026)
-    - Auto-generate CC Name (DEBOTTLENECK PRODUCTION FACILITIES ABQAIQ BI NO. 10-10303)
-    - Auto-map Safety Officer / Supervisor / Engineer
-    - Auto-format HEISCO–ENPPI–Aramco style
-    - Export Word (.docx) with complete exception handling
-    """
     import traceback
-
-    # 1. Verify and create runtime directories (Render / Linux resilience)
     try:
         os.makedirs(UPLOAD_DIR, exist_ok=True)
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         os.makedirs(SAMPLE_DIR, exist_ok=True)
     except Exception as dir_err:
         tb = traceback.format_exc()
-        print(f"[ERROR] Directory initialization failed: {dir_err}\n{tb}")
-        return render_template(
-            "observations.html",
-            error=f"Storage directory initialization error: {str(dir_err)}",
-            detailed_error=tb,
-            exception_type=type(dir_err).__name__
-        ), 200
+        return render_template("observations.html", error=f"Storage directory error: {str(dir_err)}", detailed_error=tb, exception_type=type(dir_err).__name__), 200
 
     try:
         weekly_file = request.files.get("weekly_file")
         names_file = request.files.get("names_file")
 
-        # 2. Ensure baseline sample files exist as fallbacks
         try:
             ensure_sample_files_exist()
         except Exception as sample_err:
-            print(f"[WARN] ensure_sample_files_exist error: {sample_err}")
+            print(f"[WARN] sample check error: {sample_err}")
 
         weekly_path = os.path.join(SAMPLE_DIR, "Weekly_Observation_Sample.xlsx")
         names_path = os.path.join(SAMPLE_DIR, "Names_Locations_Sample.xlsx")
 
-        # 3. Handle Weekly Observations File Upload
         if weekly_file and weekly_file.filename and weekly_file.filename.strip():
             filename_lower = weekly_file.filename.lower()
-            if not any(filename_lower.endswith(ext) for ext in ['.xlsx', '.xls', '.xlsm']):
-                return render_template(
-                    "observations.html",
-                    error=f"Invalid file format: '{weekly_file.filename}'. Please upload an Excel file (.xlsx or .xls).",
-                    detailed_error=f"File extension not permitted. Expected Excel workbook, received: {weekly_file.filename}",
-                    exception_type="InvalidFileFormatError"
-                ), 200
+            if not any(filename_lower.endswith(ext) for ext in ['.xlsx', '.xls', '.xlsm', '.csv']):
+                return render_template("observations.html", error="Invalid file format. Please upload an Excel workbook (.xlsx, .xls, .xlsm) or CSV file.", detailed_error=f"Uploaded file '{weekly_file.filename}' does not have a supported extension.", exception_type="InvalidFileFormatError"), 200
+            uploaded_weekly = os.path.join(UPLOAD_DIR, "uploaded_weekly.csv" if filename_lower.endswith('.csv') else "uploaded_weekly.xlsx")
+            weekly_file.save(uploaded_weekly)
+            weekly_path = uploaded_weekly
 
-            uploaded_weekly = os.path.join(UPLOAD_DIR, "uploaded_weekly.xlsx")
-            try:
-                weekly_file.save(uploaded_weekly)
-                weekly_path = uploaded_weekly
-            except Exception as save_err:
-                tb = traceback.format_exc()
-                print(f"[ERROR] Failed to save weekly file: {save_err}\n{tb}")
-                return render_template(
-                    "observations.html",
-                    error=f"Could not save uploaded observations file: {str(save_err)}",
-                    detailed_error=tb,
-                    exception_type=type(save_err).__name__
-                ), 200
-
-        # Verify weekly file exists on disk
         if not os.path.exists(weekly_path):
-            return render_template(
-                "observations.html",
-                error="Weekly observations spreadsheet not found. Please upload your Excel observations file.",
-                detailed_error=f"File not found at expected path: '{weekly_path}'.",
-                exception_type="FileNotFoundError"
-            ), 200
+            return render_template("observations.html", error="Weekly observations spreadsheet not found. Please upload your file.", detailed_error=f"Target path not found: {weekly_path}", exception_type="FileNotFoundError"), 200
 
-        # 4. Handle Names Mapping File Upload (Optional)
         if names_file and names_file.filename and names_file.filename.strip():
             uploaded_names = os.path.join(UPLOAD_DIR, "uploaded_names.xlsx")
             try:
                 names_file.save(uploaded_names)
                 names_path = uploaded_names
             except Exception as names_save_err:
-                print(f"[WARN] Could not save uploaded names file: {names_save_err}")
-                # Non-fatal: falls back to sample or built-in Abqaiq roster
+                print(f"[WARN] could not save names file: {names_save_err}")
 
-        # 5. Read Excel Files with try/except
+        # 1. COLUMN INGESTION & FALLBACK PROTOCOL
+        # Reading file via Pandas data stream safety wrapper with multi-sheet and header offset tolerance
+        df_raw = None
+        read_error_msg = ""
         try:
-            raw_obs = read_weekly_observation_excel(weekly_path)
+            if weekly_path.lower().endswith('.csv'):
+                try:
+                    df_raw = pd.read_csv(weekly_path)
+                except Exception:
+                    df_raw = pd.read_csv(weekly_path, encoding='latin1')
+            else:
+                try:
+                    df_raw = pd.read_excel(weekly_path)
+                except Exception as ex1:
+                    read_error_msg = str(ex1)
+                    try:
+                        df_raw = pd.read_excel(weekly_path, engine='openpyxl')
+                    except Exception as ex2:
+                        read_error_msg += f" | {str(ex2)}"
+
+                # If columns seem unparsed or table header is offset by title rows, search header row 0..10
+                if df_raw is not None and not df_raw.empty:
+                    col_str = " ".join([str(c).lower() for c in df_raw.columns])
+                    if not any(k in col_str for k in ['area', 'location', 'finding', 'observation', 'action', 'status']):
+                        try:
+                            xl = pd.ExcelFile(weekly_path)
+                            target_sheet = xl.sheet_names[0]
+                            for s in xl.sheet_names:
+                                if any(k in s.lower() for k in ['obs', 'weekly', 'hse', 'finding', 'log']):
+                                    target_sheet = s
+                                    break
+                            for h_row in range(1, 10):
+                                temp_df = pd.read_excel(weekly_path, sheet_name=target_sheet, header=h_row)
+                                t_cols = " ".join([str(c).lower() for c in temp_df.columns])
+                                if any(k in t_cols for k in ['area', 'location', 'finding', 'observation', 'action', 'status']):
+                                    df_raw = temp_df
+                                    break
+                        except Exception:
+                            pass
         except Exception as read_err:
             tb = traceback.format_exc()
-            print(f"[ERROR] read_weekly_observation_excel failed: {read_err}\n{tb}")
-            return render_template(
-                "observations.html",
-                error=f"Error reading Weekly Observations Excel file: {str(read_err)}",
-                detailed_error=tb,
-                exception_type=type(read_err).__name__
-            ), 200
+            return render_template("observations.html", error=f"Error reading spreadsheet file: {str(read_err)}", detailed_error=tb, exception_type=type(read_err).__name__), 200
 
-        if not raw_obs or len(raw_obs) == 0:
-            return render_template(
-                "observations.html",
-                error="Could not find any observation records in the Excel file. Please ensure the sheet has rows with Location/Area, Finding/Observation, and Date.",
-                detailed_error=f"read_weekly_observation_excel returned 0 records for '{weekly_path}'. Check if columns exist or if data is located on an unmapped sheet.",
-                exception_type="EmptyObservationsError"
-            ), 200
+        # Fallback to read_weekly_observation_excel if direct read is empty
+        if df_raw is None or df_raw.empty:
+            try:
+                obs_list = read_weekly_observation_excel(weekly_path)
+                if obs_list:
+                    df_raw = pd.DataFrame(obs_list)
+            except Exception:
+                pass
 
-        # Read Names Mapping (safe, non-blocking)
+        if df_raw is None or df_raw.empty:
+            return render_template("observations.html", error="The uploaded file contains no data rows or could not be parsed.", detailed_error=f"DataFrame is empty. Read logs: {read_error_msg}", exception_type="EmptyDataError"), 200
+
+        # Safe Column Normalization & Fallback Logic
+        def get_fallback_series(df, candidate_cols, default=""):
+            for col in candidate_cols:
+                if col in df.columns:
+                    s = df[col].fillna("").astype(str).str.strip()
+                    if not (s == "").all():
+                        return s
+                for actual_col in df.columns:
+                    if str(actual_col).strip().lower() == col.strip().lower():
+                        s = df[actual_col].fillna("").astype(str).str.strip()
+                        if not (s == "").all():
+                            return s
+            for col in candidate_cols:
+                for actual_col in df.columns:
+                    if str(actual_col).strip().lower() == col.strip().lower():
+                        return df[actual_col].fillna("").astype(str).str.strip()
+            return pd.Series([default] * len(df), index=df.index)
+
+        # Mappings adhering strictly to required fallback protocol:
+        # - df['LOCATION'] = df['Area'] or df['Area '] or df['Location']
+        # - df['OBSERVATION'] = df['Finding'] or df['Observation']
+        # - df['RECOMMENDATION'] = df['Corrective Action'] or df['Recommendation']
+        # - df['RESPONSIBLE ENTITY'] = df['Assignee'] or df['Action By'] or df['Responsible Person']
+        # - df['DUE DATE'] = df['Due Date']
+        # - df['STATUS'] = df['Status']
+        # - For 'TYPE': If 'Risk Level' contains 'Low' -> 'Minor'. If 'Medium' or 'High' -> 'Major'.
+        df_raw['LOCATION'] = get_fallback_series(df_raw, ['Area', 'Area ', 'Location', 'LOCATION', 'area', 'location', 'Zone', 'Substation'])
+        df_raw['OBSERVATION'] = get_fallback_series(df_raw, ['Finding', 'Finding ', 'Observation', 'Observation ', 'OBSERVATION', 'finding', 'observation', 'Hazard', 'Issue'])
+        df_raw['RECOMMENDATION'] = get_fallback_series(df_raw, ['Corrective Action', 'Corrective Action ', 'Recommendation', 'Recommendation ', 'RECOMMENDATION', 'corrective_action', 'recommendation', 'Action'])
+        df_raw['RESPONSIBLE ENTITY'] = get_fallback_series(df_raw, ['Assignee', 'Action By', 'Responsible Person', 'RESPONSIBLE ENTITY', 'Responsible', 'assignee', 'action_by'], default="Site Supervisor")
+        df_raw['DUE DATE'] = get_fallback_series(df_raw, ['Due Date', 'Due Date ', 'Observation Date', 'Date', 'DUE DATE', 'due_date', 'observation_date'])
+        df_raw['STATUS'] = get_fallback_series(df_raw, ['Status', 'STATUS', 'Finding Status', 'status'], default="Closed")
+
+        # Format dates cleanly
+        df_raw['DUE DATE'] = df_raw['DUE DATE'].apply(lambda d: parse_date_value(d) if d else "")
+
+        # Risk level to TYPE
+        risk_series = get_fallback_series(df_raw, ['Risk Level', 'Risk Level ', 'Risk', 'Severity', 'risk_level', 'TYPE', 'Type', 'Observation Type'])
+        def map_risk_to_type(val):
+            v_str = str(val).upper().strip()
+            if 'LOW' in v_str:
+                return 'Minor'
+            elif 'HIGH' in v_str or 'MED' in v_str or 'CRITICAL' in v_str:
+                return 'Major'
+            elif 'MINOR' in v_str:
+                return 'Minor'
+            elif 'MAJOR' in v_str:
+                return 'Major'
+            return 'Major' if v_str else 'Minor'
+
+        df_raw['TYPE'] = risk_series.apply(map_risk_to_type)
+        df_raw['doc_type'] = df_raw['TYPE']
+
+        # Raised By / Observed By
+        df_raw['observed_by'] = get_fallback_series(df_raw, ['Raised By', 'Observed By', 'raised_by', 'observed_by', 'Safety Officer', 'Inspector'])
+        # Assignee / Status By
+        df_raw['status_by'] = get_fallback_series(df_raw, ['Assignee', 'Status By', 'assignee', 'status_by', 'Site Engineer', 'Action By'])
+
+        # Set aliases for lowercase / downstream compatibility across templates and scripts
+        df_raw['location'] = df_raw['LOCATION']
+        df_raw['area'] = df_raw['LOCATION']
+        df_raw['finding'] = df_raw['OBSERVATION']
+        df_raw['observation'] = df_raw['OBSERVATION']
+        df_raw['corrective_action'] = df_raw['RECOMMENDATION']
+        df_raw['recommendation'] = df_raw['RECOMMENDATION']
+        df_raw['responsible_person'] = df_raw['RESPONSIBLE ENTITY']
+        df_raw['responsible_entity'] = df_raw['RESPONSIBLE ENTITY']
+        df_raw['RESPONSIBLE_ENTITY'] = df_raw['RESPONSIBLE ENTITY']
+        df_raw['due_date'] = df_raw['DUE DATE']
+        df_raw['DUE_DATE'] = df_raw['DUE DATE']
+        df_raw['observation_date'] = df_raw['DUE DATE']
+        df_raw['status'] = df_raw['STATUS']
+        df_raw['type'] = df_raw['TYPE']
+        df_raw['assignee'] = df_raw['status_by']
+
+        # Clean string placeholders
+        for col in ['LOCATION', 'OBSERVATION', 'RECOMMENDATION', 'RESPONSIBLE ENTITY', 'DUE DATE', 'STATUS', 'TYPE', 'observed_by', 'status_by']:
+            df_raw[col] = df_raw[col].replace({'nan': '', 'None': '', '<NA>': '', 'NAT': ''})
+
+        raw_obs = df_raw.to_dict(orient='records')
+
+        # Read optional Names Mapping
         names_map = {}
         if os.path.exists(names_path):
             try:
                 names_map = read_names_locations_excel(names_path)
-            except Exception as names_err:
-                print(f"[WARN] Error reading names mapping from '{names_path}': {names_err}")
+            except Exception:
                 names_map = {}
 
-        # 6. Process & Map Observations
+        # Process and map observations through mapper
         try:
             processed = process_and_map_observations(raw_obs, names_map)
-        except Exception as map_err:
-            tb = traceback.format_exc()
-            print(f"[ERROR] process_and_map_observations failed: {map_err}\n{tb}")
-            return render_template(
-                "observations.html",
-                error=f"Error mapping observations data: {str(map_err)}",
-                detailed_error=tb,
-                exception_type=type(map_err).__name__
-            ), 200
+        except Exception:
+            processed = []
+            for idx, r in enumerate(raw_obs, 1):
+                item = dict(r)
+                item['sn'] = idx
+                item['inspection_id'] = item.get('inspection_id') or f"INSP-{idx:03d}"
+                processed.append(item)
 
-        reviewed_by_name = request.form.get("reviewed_by_name", "AHMED GHALWASH").strip() or "AHMED GHALWASH"
+        # 2. REPORT CARD CHUNKING & RENDERING LOGIC:
+        # Override signatures per protocol:
+        # - Observed By: Safety officer Name: (from Raised By / Observed By)
+        # - Status By: Site Engineer Name: (from Assignee / Status By)
+        # - Reviewed By: Project Manager Name: globally hardcoded to static value "AHMED GHALWASH"
+        banned_titles = {'site supervisor', 'site engineer', 'project manager', 'safety officer', 'nan', 'none'}
+        for p_item in processed:
+            matching_row = next((r for r in raw_obs if (str(r.get('sn') or '') == str(p_item.get('sn') or '')) or (str(r.get('finding') or '') == str(p_item.get('finding') or ''))), {})
+            
+            obs_name = (matching_row.get('observed_by') or matching_row.get('Observed By') or matching_row.get('Raised By') or p_item.get('observed_by') or p_item.get('raised_by') or '').strip()
+            if obs_name.lower() in banned_titles:
+                obs_name = ''
+                
+            stat_name = (matching_row.get('status_by') or matching_row.get('assignee') or matching_row.get('Assignee') or p_item.get('status_by') or p_item.get('assignee') or '').strip()
+            if stat_name.lower() in banned_titles:
+                stat_name = ''
+
+            p_item['observed_by'] = obs_name
+            p_item['raised_by'] = obs_name
+            p_item['Dynamic_Raised_By'] = obs_name
+            p_item['RAISED_BY'] = obs_name
+            
+            p_item['status_by'] = stat_name
+            p_item['assignee'] = stat_name
+            p_item['Dynamic_Assignee'] = stat_name
+            p_item['ASSIGNEE'] = stat_name
+            p_item['status_by_role'] = 'Site Engineer'
+            
+            p_item['reviewed_by'] = 'AHMED GHALWASH'
+            p_item['Reviewed_By'] = 'AHMED GHALWASH'
+
+        reviewed_by_name = "AHMED GHALWASH"
         reviewed_by_date = request.form.get("reviewed_by_date", "").strip() or datetime.date.today().strftime("%d/%m/%Y")
 
-        # Check if user requested preview instead of immediate Word download
+        # Chunk final processed records into sequential groups with MAXIMUM of 3 records per block
+        pages_data = []
+        chunk_size = 3
+        total_records = len(processed)
+        for i in range(0, total_records, chunk_size):
+            chunk = processed[i:i + chunk_size]
+            page_num = (i // chunk_size) + 1
+            page_ref_num = f"{page_num:02d}"
+            # Ref No: 433001/HSE-OR/[Zero-Padded-Two-Digit-Index]/2026 starting at 01
+            ref_no = f"433001/HSE-OR/{page_ref_num}/2026"
+            
+            # Dynamic First Record Date
+            first_record_date = ""
+            for item in chunk:
+                d = item.get('DUE_DATE') or item.get('DUE DATE') or item.get('due_date') or item.get('observation_date', '')
+                if d and str(d).strip():
+                    first_record_date = str(d).strip()
+                    break
+            if not first_record_date:
+                first_record_date = reviewed_by_date or datetime.date.today().strftime("%d/%m/%Y")
+
+            # Extract dynamic footer signature name values for each block
+            dyn_raised_by = ""
+            dyn_assignee = ""
+            for item in chunk:
+                if not dyn_raised_by:
+                    val = str(item.get('Dynamic_Raised_By') or item.get('observed_by') or item.get('raised_by') or item.get('RAISED_BY') or '').strip()
+                    if val.lower() not in banned_titles:
+                        dyn_raised_by = val
+                if not dyn_assignee:
+                    val = str(item.get('Dynamic_Assignee') or item.get('status_by') or item.get('assignee') or item.get('ASSIGNEE') or '').strip()
+                    if val.lower() not in banned_titles:
+                        dyn_assignee = val
+
+            block_unit = {
+                'group_index': page_num,
+                'page_number': page_num,
+                'page_name': f"OR/{page_ref_num}",
+                'Generated_Ref_No': ref_no,
+                'ref_no': ref_no,
+                'cc_name': "DEBOTTLENECK PRODUCTION FACILITIES ABQAIQ BI NO. 10-10303",
+                'CC_Name': "DEBOTTLENECK PRODUCTION FACILITIES ABQAIQ BI NO. 10-10303",
+                'Dynamic_First_Record_Date': first_record_date,
+                'page_date': first_record_date,
+                'records': chunk,
+                'observations': chunk,
+                'Dynamic_Raised_By': dyn_raised_by,
+                'observed_by': dyn_raised_by,
+                'Dynamic_Assignee': dyn_assignee,
+                'status_by': dyn_assignee,
+                'status_by_role': 'Site Engineer',
+                'Reviewed_By': "AHMED GHALWASH",
+                'reviewed_by': "AHMED GHALWASH",
+                'reviewed_by_name': "AHMED GHALWASH",
+                'reviewed_by_date': reviewed_by_date or first_record_date
+            }
+            pages_data.append(block_unit)
+
+        # Handle preview action vs immediate download
         user_action = request.form.get("action", "generate").lower()
         if "preview" in user_action:
             state = load_current_state()
             state["processed"] = processed
             state["names_mapping"] = names_map
-            state["reviewed_by_name"] = reviewed_by_name
+            state["reviewed_by_name"] = "AHMED GHALWASH"
             state["reviewed_by_date"] = reviewed_by_date
             state["weekly_filename"] = getattr(weekly_file, 'filename', 'uploaded_weekly.xlsx')
+            state["report_groups"] = pages_data
             save_current_state(state)
             return redirect(url_for("preview_page"))
 
-        try:
-            pages_data = split_into_pages(processed, reviewed_by_date=reviewed_by_date, reviewed_by_name=reviewed_by_name)
-        except Exception as page_err:
-            tb = traceback.format_exc()
-            print(f"[ERROR] split_into_pages failed: {page_err}\n{tb}")
-            return render_template(
-                "observations.html",
-                error=f"Error formatting pages for observations register: {str(page_err)}",
-                detailed_error=tb,
-                exception_type=type(page_err).__name__
-            ), 200
-
-        if not pages_data:
-            return render_template(
-                "observations.html",
-                error="Pagination resulted in 0 pages. No valid records available to format.",
-                detailed_error="split_into_pages produced an empty pages_data list.",
-                exception_type="EmptyPagesError"
-            ), 200
-
-        # 7. Word Document Generation (.docx)
+        # Generate Word Document (.docx)
         output_word_path = os.path.join(OUTPUT_DIR, "HSE_Observation_Register.docx")
         try:
             generate_observation_register_doc(pages_data, output_word_path)
         except Exception as doc_err:
             tb = traceback.format_exc()
-            print(f"[ERROR] generate_observation_register_doc failed: {doc_err}\n{tb}")
-            return render_template(
-                "observations.html",
-                error=f"Error generating Word document (.docx): {str(doc_err)}",
-                detailed_error=tb,
-                exception_type=type(doc_err).__name__
-            ), 200
+            return render_template("observations.html", error=f"Error generating Word document (.docx): {str(doc_err)}", detailed_error=tb, exception_type=type(doc_err).__name__), 200
 
         if not os.path.exists(output_word_path):
-            return render_template(
-                "observations.html",
-                error="Word document generation completed, but output file was not found on disk.",
-                detailed_error=f"Expected document at '{output_word_path}'.",
-                exception_type="OutputFileMissingError"
-            ), 200
+            return render_template("observations.html", error="Word document generation completed, but output file was not found on disk.", detailed_error=f"Expected document at '{output_word_path}'.", exception_type="OutputFileMissingError"), 200
 
-        # 8. Save State to Session (Safe)
+        # Companion JSL Action Tracking Register Excel
+        output_excel_path = os.path.join(OUTPUT_DIR, "HSE_Action_Tracking_Register_JSL.xlsx")
+        try:
+            generate_jsl_log_excel(
+                processed_observations=processed,
+                output_path=output_excel_path,
+                project_name="ABQ-DBN Project",
+                project_number="BI-10-10303",
+                last_update_date=processed[-1].get("observation_date", "") if processed else ""
+            )
+        except Exception as jsl_err:
+            print(f"[WARN] JSL log generation non-fatal error: {jsl_err}")
+
+        # Update Session State
         try:
             state = load_current_state()
             state["processed"] = processed
             state["names_mapping"] = names_map
-            state["reviewed_by_name"] = reviewed_by_name
+            state["reviewed_by_name"] = "AHMED GHALWASH"
             state["reviewed_by_date"] = reviewed_by_date
+            state["report_groups"] = pages_data
             save_current_state(state)
         except Exception as state_err:
             print(f"[WARN] Failed to update session state: {state_err}")
 
-        # 9. Send Generated File as Download
+        # Send Generated Word Register (.docx)
         return send_file(
             output_word_path,
             as_attachment=True,
