@@ -10,14 +10,14 @@ def parse_date_value(val):
     val_str = str(val).strip()
     if not val_str or val_str.lower() == 'nan':
         return ""
-    # Strip any trailing timestamp strings cleanly
     if " " in val_str:
-        val_str = val_str.split(" ")[0]
+        val_str = val_str.split(" ")
+        if len(val_str) > 0:
+            val_str = val_str[0]
     return val_str
 
 def read_weekly_observation_excel(file_path):
     try:
-        # Use python-calamine for fast, low-memory spreadsheet reading
         workbook = CalamineWorkbook.from_path(file_path)
         sheet_names = workbook.sheet_names
         if not sheet_names:
@@ -41,42 +41,36 @@ def read_weekly_observation_excel(file_path):
             
         records = []
         for rec in raw_records:
-            # 1. Location / Area
             raw_loc = ""
             for k in ['Area', 'Location', 'AREA', 'LOCATION', 'area', 'location', 'Sub-Area']:
                 if k in rec and rec[k] and str(rec[k]).strip().lower() != 'nan':
                     raw_loc = str(rec[k]).strip()
                     break
 
-            # 2. Finding / Observation
             raw_find = ""
             for k in ['Finding', 'Finding ', 'Observation', 'OBSERVATION', 'finding', 'observation']:
                 if k in rec and rec[k] and str(rec[k]).strip().lower() != 'nan':
                     raw_find = str(rec[k]).strip()
                     break
 
-            # 3. Corrective Action
             raw_rec = ""
             for k in ['Corrective Action', 'Recommendation', 'RECOMMENDATION', 'corrective action', 'recommendation']:
                 if k in rec and rec[k] and str(rec[k]).strip().lower() != 'nan':
                     raw_rec = str(rec[k]).strip()
                     break
 
-            # 4. Assignee Role -> 'assignee' (Supervisor, Engineer, Rigger 3)
             raw_assignee = ""
             for k in ['Designation', 'ROLE', 'Role', 'Position', 'Target Role', 'Assignee', 'Action By', 'Responsible Person', 'RESPONSIBLE ENTITY']:
                 if k in rec and rec[k] and str(rec[k]).strip().lower() != 'nan':
                     raw_assignee = str(rec[k]).strip()
                     break
 
-            # 5. Due Date -> 'due_date'
             raw_due = ""
             for k in ['Due Date', 'Due Date ', 'DUE DATE', 'due_date', 'Observation Date', 'DATE']:
                 if k in rec and rec[k] and str(rec[k]).strip().lower() != 'nan':
                     raw_due = parse_date_value(rec[k])
                     break
 
-            # 6. Status -> 'status'
             raw_stat = ""
             for k in ['Status', 'STATUS', 'status', 'State']:
                 if k in rec and rec[k] and str(rec[k]).strip().lower() != 'nan':
@@ -90,7 +84,6 @@ def read_weekly_observation_excel(file_path):
             else:
                 raw_stat = "Open"
 
-            # 7. Risk Level -> 'risk_level'
             raw_risk = ""
             for k in ['Risk Level', 'Risk', 'TYPE', 'risk level', 'risk']:
                 if k in rec and rec[k] and str(rec[k]).strip().lower() != 'nan':
@@ -103,21 +96,18 @@ def read_weekly_observation_excel(file_path):
             else:
                 mapped_risk = 'Minor'
 
-            # 8. Raised By / Safety Officer Name -> 'observed_by'
             raw_raised = ""
             for k in ['Raised By', 'Observed By', 'RAISED_BY', 'raised by', 'observed by', 'Safety Officer', 'Safety Officer Name']:
                 if k in rec and rec[k] and str(rec[k]).strip().lower() != 'nan':
                     raw_raised = str(rec[k]).strip()
                     break
 
-            # 9. Engineer Name -> 'status_by'
             raw_engineer = ""
             for k in ['Actionee Name', 'Engineer Name', 'Site Engineer', 'Assignee Name', 'Engineer']:
                 if k in rec and rec[k] and str(rec[k]).strip().lower() != 'nan':
                     raw_engineer = str(rec[k]).strip()
                     break
 
-            # Package target fields smoothly
             rec_data = {}
             rec_data['location'] = raw_loc
             rec_data['finding'] = raw_find
@@ -129,7 +119,6 @@ def read_weekly_observation_excel(file_path):
             rec_data['doc_type'] = mapped_risk
             rec_data['type'] = mapped_risk
             
-            # Map clean roles and drop name swaps
             rec_data['observed_by'] = raw_raised if (raw_raised and raw_raised.lower() != 'internal') else "Safety Officer"
             rec_data['status_by'] = raw_engineer if raw_engineer else "Site Engineer"
             rec_data['reviewed_by'] = raw_raised if (raw_raised and raw_raised.lower() != 'internal') else "Safety Officer"
