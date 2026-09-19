@@ -6,6 +6,18 @@ DEFAULT_CC_NAME = "DEBOTTLENECK PRODUCTION FACILITIES ABQAIQ BI NO. 10-10303"
 DEFAULT_REF_PREFIX = "433001/HSE-OR"
 DEFAULT_YEAR = "2026"
 
+DEFAULT_ABQAIQ_MAPPING: Dict[str, Dict[str, str]] = {
+    'GOSP03': {'location_display': 'GOSP - 03', 'safety_officer': 'BILAL SAEED MUHAMM', 'supervisor': 'EMAD KAMAL', 'engineer': 'AAFAQ AHMAD', 'project_manager': 'AHMED GHALWASH'},
+    'GOSP3': {'location_display': 'GOSP-3', 'safety_officer': 'BILAL SAEED MUHAMM', 'supervisor': 'EMAD KAMAL', 'engineer': 'AAFAQ AHMAD', 'project_manager': 'AHMED GHALWASH'},
+    'GOSP02': {'location_display': 'GOSP - 02', 'safety_officer': 'RAKIB AJAMIN', 'supervisor': 'AHMED GADELKARIM', 'engineer': 'OSAMA ABDELRAHMAN', 'project_manager': 'AHMED GHALWASH'},
+    'GOSP2': {'location_display': 'GOSP-2', 'safety_officer': 'RAKIB AJAMIN', 'supervisor': 'AHMED GADELKARIM', 'engineer': 'OSAMA ABDELRAHMAN', 'project_manager': 'AHMED GHALWASH'},
+    'GOSP05': {'location_display': 'GOSP - 05', 'safety_officer': 'MOHAMED AARIF', 'supervisor': 'GAMAL SHAWKY', 'engineer': 'AL MOATASEMBELLAH', 'project_manager': 'AHMED GHALWASH'},
+    'GOSP5': {'location_display': 'GOSP-5', 'safety_officer': 'MOHAMED AARIF', 'supervisor': 'GAMAL SHAWKY', 'engineer': 'AL MOATASEMBELLAH', 'project_manager': 'AHMED GHALWASH'},
+    'GOSP06': {'location_display': 'GOSP - 06', 'safety_officer': 'SHEMEER SHAMSUDE', 'supervisor': 'AYMAN SALAHELDIN', 'engineer': 'ALAA ABDELGHANY', 'project_manager': 'AHMED GHALWASH'},
+    'GOSP6': {'location_display': 'GOSP-6', 'safety_officer': 'SHEMEER SHAMSUDE', 'supervisor': 'AYMAN SALAHELDIN', 'engineer': 'ALAA ABDELGHANY', 'project_manager': 'AHMED GHALWASH'},
+    'LAYDOWN': {'location_display': 'LAYDOWN', 'safety_officer': 'AAMIR SADDIQUE', 'supervisor': 'RASHEED MAKHMOOR', 'engineer': 'IBRAHIM MOHAMED', 'project_manager': 'AHMED GHALWASH'},
+}
+
 def normalize_location_key(text: Any) -> str:
     """Normalize location strings like 'ABQ GOSP - 06' and 'GOSP- 06' to match cleanly."""
     if not text:
@@ -21,31 +33,45 @@ def find_matched_names(location: str, mapping: Dict[str, Dict[str, str]]) -> Dic
     """Find matched Safety Officer, Supervisor, and Engineer for a location."""
     key = normalize_location_key(location)
     
-    # 1. Direct match
-    if key in mapping:
+    # 1. Direct match in provided mapping
+    if mapping and key in mapping:
         return mapping[key]
         
-    # 2. Substring match
-    for map_key, data in mapping.items():
-        if map_key and (map_key in key or key in map_key):
-            return data
-            
-    # 3. Numeric match (e.g. 06, 05, 02, 03)
+    # 2. Substring match in provided mapping
+    if mapping:
+        for map_key, data in mapping.items():
+            if map_key and (map_key in key or key in map_key):
+                return data
+                
+    # 3. Numeric match in provided mapping (e.g. 06, 05, 02, 03)
     loc_numbers = re.findall(r'\d+', key)
-    if loc_numbers:
+    if mapping and loc_numbers:
         for map_key, data in mapping.items():
             map_numbers = re.findall(r'\d+', map_key)
             if loc_numbers == map_numbers:
                 return data
+
+    # 4. Fallback to default project roster for Abqaiq
+    if key in DEFAULT_ABQAIQ_MAPPING:
+        return DEFAULT_ABQAIQ_MAPPING[key]
+    for d_key, d_data in DEFAULT_ABQAIQ_MAPPING.items():
+        if d_key in key or key in d_key:
+            return d_data
+    if loc_numbers:
+        for d_key, d_data in DEFAULT_ABQAIQ_MAPPING.items():
+            d_numbers = re.findall(r'\d+', d_key)
+            if loc_numbers == d_numbers:
+                return d_data
                 
-    # Fallback default empty
+    # Final default
     return {
         'location_display': location,
         'safety_officer': '',
         'supervisor': '',
         'engineer': '',
-        'project_manager': ''
+        'project_manager': 'AHMED GHALWASH'
     }
+
 
 def parse_sortable_date(date_str: str) -> datetime.date:
     """Parse date string into datetime.date for sorting."""

@@ -1,4 +1,5 @@
 import re
+import os
 import datetime
 import pandas as pd
 from typing import Dict, List, Any, Tuple
@@ -9,6 +10,15 @@ def normalize_col(name: Any) -> str:
         name = str(name) if name is not None else ""
     return re.sub(r'[^a-z0-9]', '', name.lower())
 
+def clean_cell_str(val: Any) -> str:
+    """Clean cell values avoiding 'nan', 'None', '<NA>', etc."""
+    if val is None or pd.isna(val):
+        return ""
+    s = str(val).strip()
+    if s.lower() in ('nan', 'none', '<na>', 'nat', 'null'):
+        return ""
+    return s
+
 def parse_date_value(val: Any) -> str:
     """Parse various date representations to DD/MM/YYYY string format."""
     if val is None or pd.isna(val):
@@ -16,9 +26,29 @@ def parse_date_value(val: Any) -> str:
     if isinstance(val, (datetime.datetime, datetime.date)):
         return val.strftime("%d/%m/%Y")
     
+    # Handle numeric Excel serial date (e.g. 45548 = 13/09/2024)
+    if isinstance(val, (int, float)):
+        try:
+            num_val = float(val)
+            if 30000 < num_val < 60000:
+                dt = pd.to_datetime(num_val, unit='D', origin='1899-12-30')
+                return dt.strftime("%d/%m/%Y")
+        except Exception:
+            pass
+
     val_str = str(val).strip()
-    if not val_str:
+    if not val_str or val_str.lower() in ('nan', 'none'):
         return ""
+
+    # Check if string is numeric Excel serial date
+    try:
+        if val_str.replace('.', '', 1).isdigit():
+            num_val = float(val_str)
+            if 30000 < num_val < 60000:
+                dt = pd.to_datetime(num_val, unit='D', origin='1899-12-30')
+                return dt.strftime("%d/%m/%Y")
+    except Exception:
+        pass
     
     # Try common formats
     formats = [
@@ -47,6 +77,16 @@ def format_date_for_jsl(val: Any) -> str:
     if isinstance(val, (datetime.datetime, datetime.date)):
         return val.strftime("%d-%b-%y")
     
+    # Handle Excel serial dates
+    if isinstance(val, (int, float)):
+        try:
+            num_val = float(val)
+            if 30000 < num_val < 60000:
+                dt = pd.to_datetime(num_val, unit='D', origin='1899-12-30')
+                return dt.strftime("%d-%b-%y")
+        except Exception:
+            pass
+
     val_str = str(val).strip()
     if not val_str:
         return ""
@@ -58,103 +98,201 @@ def format_date_for_jsl(val: Any) -> str:
         return val_str
 
 def read_weekly_observation_excel(file_path: str) -> List[Dict[str, Any]]:
-    """Read weekly observation excel file and return standardized list of records."""
-    df = pd.read_excel(file_path)
-    
+    """
+    Read weekly observation excel file and return standardized list of records.
+    Robust against:
+    - Title banner rows / logos on top of sheets (auto-detects header row 0 to 6)
+    - Multi-sheet workbooks (scans sheets for observations data)
+    - Varied column namings and missing columns
+    - Missing files or empty sheets
+    """
+    if not file_path or not os.path.exists(file_path):
+        return []
+
+    # Try reading workbook to find best sheet and header row
+    best_df = None
+    best_score = -1
+
+    try:
+        excel_file = pd.ExcelFile(file_path)
+        sheet_names = excel_file.sheet_names
+    except Exception as e:
+        # Fallback to direct read
+        excel_file = None
+        sheet_names = [0]
+
+    # Prioritize sheets whose names contain observation-related words
+    ordered_sheets = []
+    for s in sheet_names:
+        s_lower = str(s).lower()
+        if any(k in s_lower for k in ['obs', 'weekly', 'register', 'hse', 'hazard', 'report', 'log']):
+            ordered_sheets.insert(0, s)
+        else:
+            ordered_sheets.append(s)
+
+    col_keywords = {
+        'finding': ['finding', 'findings', 'observation', 'observations', 'observationdetails', 'description', 'hazard', 'hazarddetails', 'itemdescription', 'issue', 'unsafeact', 'unsafecondition', 'details', 'detail', 'actionitem', 'deficiency'],
+        'area': ['area', 'location', 'site', 'worklocation', 'facility', 'unit', 'gosp', 'place', 'workarea', 'worksite', 'station', 'locations'],
+        'date': ['observationdate', 'date', 'obsdate', 'dateofobservation', 'inspectiondate', 'targetdate', 'raiseddate', 'dated'],
+        'action': ['correctiveaction', 'recommendation', 'recommendations', 'actionrequired', 'actiontaken', 'correctiveactiontaken', 'preventiveaction', 'action', 'proposedaction', 'correctiveactions'],
+        'responsible': ['responsibleperson', 'responsibleentity', 'responsible', 'assignedto', 'actionby', 'pic', 'personincharge', 'supervisor'],
+        'status': ['status', 'actionstatus', 'currentstatus'],
+        'sn': ['sn', 'sno', 'no', 'number', 'id', 'item', 'itemno', 'slno']
+    }
+
+    for sheet in ordered_sheets:
+        # Check header rows from 0 to 6
+        for header_idx in range(7):
+            try:
+                if excel_file:
+                    candidate_df = excel_file.parse(sheet, header=header_idx)
+                else:
+                    candidate_df = pd.read_excel(file_path, header=header_idx)
+                
+                if candidate_df.empty or len(candidate_df.columns) < 2:
+                    continue
+                
+                # Score candidate based on matched columns
+                matched_categories = set()
+                for c in candidate_df.columns:
+                    c_norm = normalize_col(c)
+                    for cat, kws in col_keywords.items():
+                        if c_norm in kws:
+                            matched_categories.add(cat)
+                
+                score = len(matched_categories)
+                # Extra bonus if sheet name was relevant
+                if any(k in str(sheet).lower() for k in ['obs', 'register', 'hse']):
+                    score += 2
+
+                if score > best_score and ('finding' in matched_categories or 'area' in matched_categories or score >= 2):
+                    best_score = score
+                    best_df = candidate_df
+                    if score >= 4:
+                        break
+            except Exception:
+                continue
+        if best_score >= 4:
+            break
+
+    # If no high-scoring sheet found, fall back to standard header=0
+    if best_df is None or best_df.empty:
+        try:
+            best_df = pd.read_excel(file_path)
+        except Exception:
+            return []
+
+    df = best_df
+    if df.empty:
+        return []
+
     # Map columns based on normalized names
     col_map = {}
     for col in df.columns:
         norm = normalize_col(col)
-        if norm in ['sn', 'sno', 'no', 'number', 'id']:
+        if norm in ['sn', 'sno', 'no', 'number', 'id', 'item', 'itemno', 'slno']:
             col_map['sn'] = col
-        elif norm in ['area', 'location', 'site', 'worklocation', 'facility']:
+        elif norm in ['area', 'location', 'site', 'worklocation', 'facility', 'unit', 'gosp', 'place', 'workarea', 'worksite', 'station', 'locations']:
             col_map['area'] = col
-        elif norm in ['finding', 'observation', 'observationdetails', 'description', 'findings']:
+        elif norm in ['finding', 'observation', 'observationdetails', 'description', 'findings', 'hazard', 'hazarddetails', 'itemdescription', 'issue', 'unsafeact', 'unsafecondition', 'details', 'detail', 'deficiency']:
             col_map['finding'] = col
-        elif norm in ['correctiveaction', 'recommendation', 'actionrequired', 'actiontaken', 'correctiveactiontaken']:
+        elif norm in ['correctiveaction', 'recommendation', 'recommendations', 'actionrequired', 'actiontaken', 'correctiveactiontaken', 'preventiveaction', 'action', 'proposedaction', 'correctiveactions']:
             col_map['corrective_action'] = col
-        elif norm in ['observationdate', 'date', 'obsdate', 'dateofobservation', 'inspectiondate']:
+        elif norm in ['observationdate', 'date', 'obsdate', 'dateofobservation', 'inspectiondate', 'targetdate', 'raiseddate', 'dated']:
             col_map['observation_date'] = col
-        elif norm in ['responsibleperson', 'responsibleentity', 'responsible', 'assignedto', 'actionby']:
+        elif norm in ['responsibleperson', 'responsibleentity', 'responsible', 'assignedto', 'actionby', 'pic', 'personincharge']:
             col_map['responsible_person'] = col
-        elif norm in ['category', 'observationcategory', 'hazardcategory', 'natureofhazard']:
+        elif norm in ['category', 'observationcategory', 'hazardcategory', 'natureofhazard', 'categoryofhazard']:
             col_map['category'] = col
-        elif norm in ['status', 'actionstatus']:
+        elif norm in ['status', 'actionstatus', 'currentstatus']:
             col_map['status'] = col
-        elif norm in ['dateclosed', 'closeoutdate', 'closedate', 'closeddate']:
+        elif norm in ['dateclosed', 'closeoutdate', 'closedate', 'closeddate', 'completeddate']:
             col_map['date_closed'] = col
-        elif norm in ['responsiblecompany', 'company']:
+        elif norm in ['responsiblecompany', 'company', 'agency']:
             col_map['responsible_company'] = col
         elif norm in ['assigneecompany', 'contractor', 'actionparty']:
             col_map['assignee_company'] = col
-        elif norm in ['type', 'observationtype', 'hazardtype', 'classification']:
+        elif norm in ['type', 'observationtype', 'hazardtype', 'classification', 'severity', 'risk']:
             col_map['observation_type'] = col
         elif any(k in norm for k in ['permitactivity', 'permit', 'activity', 'workdescription', 'activities']):
             col_map['permit_activity'] = col
         elif norm in ['remarks', 'remark', 'comments', 'notes']:
             col_map['remarks'] = col
 
+    # Fallback heuristic: If 'finding' is missing, find column with longest text
+    if 'finding' not in col_map:
+        longest_col = None
+        max_avg_len = 0
+        for col in df.columns:
+            if col in col_map.values():
+                continue
+            series = df[col].astype(str)
+            avg_len = series.map(len).mean()
+            if avg_len > max_avg_len and avg_len > 10:
+                max_avg_len = avg_len
+                longest_col = col
+        if longest_col:
+            col_map['finding'] = longest_col
+
+    # Fallback heuristic: If 'area' is missing, look for columns containing GOSP or Site
+    if 'area' not in col_map:
+        for col in df.columns:
+            if col in col_map.values():
+                continue
+            series_str = " ".join(df[col].dropna().astype(str).head(10)).upper()
+            if any(k in series_str for k in ['GOSP', 'LAYDOWN', 'SITE', 'ABQAIQ', 'UNIT', 'AREA']):
+                col_map['area'] = col
+                break
+
     records = []
     for idx, row in df.iterrows():
-        # Check if row is empty
-        finding_val = str(row.get(col_map.get('finding', ''), '')).strip()
-        area_val = str(row.get(col_map.get('area', ''), '')).strip()
+        # Clean values
+        finding_val = clean_cell_str(row.get(col_map.get('finding', '')) if 'finding' in col_map else '')
+        area_val = clean_cell_str(row.get(col_map.get('area', '')) if 'area' in col_map else '')
+        
+        # Skip completely empty rows
         if not finding_val and not area_val:
             continue
         
-        raw_date = row.get(col_map.get('observation_date', ''), '')
-        std_date = parse_date_value(raw_date)
+        # If finding is empty but area is present, use a default placeholder or area
+        if not finding_val and area_val:
+            finding_val = f"General HSE observation at {area_val}"
+        elif not area_val and finding_val:
+            area_val = "GOSP-06"
         
-        raw_close_date = row.get(col_map.get('date_closed', ''), '')
+        raw_date = row.get(col_map.get('observation_date', '')) if 'observation_date' in col_map else ''
+        std_date = parse_date_value(raw_date)
+        if not std_date:
+            std_date = datetime.date.today().strftime("%d/%m/%Y")
+        
+        raw_close_date = row.get(col_map.get('date_closed', '')) if 'date_closed' in col_map else ''
         std_close_date = parse_date_value(raw_close_date) if raw_close_date else std_date
         
-        # Raw row values
-        sn_val = row.get(col_map.get('sn', ''), idx + 1)
-        if pd.isna(sn_val) or sn_val == '':
-            sn_val = idx + 1
+        # SN value
+        sn_val = row.get(col_map.get('sn', '')) if 'sn' in col_map else ''
+        if pd.isna(sn_val) or sn_val == '' or clean_cell_str(sn_val) == '':
+            sn_val = len(records) + 1
         else:
             try:
                 sn_val = int(float(sn_val))
             except Exception:
                 sn_val = str(sn_val).strip()
 
-        resp_person = str(row.get(col_map.get('responsible_person', ''), '')).strip()
-        if resp_person == 'nan':
-            resp_person = ''
-            
-        category = str(row.get(col_map.get('category', ''), 'General')).strip()
-        if category == 'nan':
-            category = 'General'
-            
-        status = str(row.get(col_map.get('status', ''), 'Closed')).strip()
-        if status == 'nan' or not status:
-            status = 'Closed'
-            
-        resp_company = str(row.get(col_map.get('responsible_company', ''), 'HEISCO')).strip()
-        if resp_company == 'nan' or not resp_company:
-            resp_company = 'HEISCO'
-            
-        assignee_company = str(row.get(col_map.get('assignee_company', ''), resp_company)).strip()
-        if assignee_company == 'nan' or not assignee_company:
-            assignee_company = resp_company
-            
-        obs_type = str(row.get(col_map.get('observation_type', ''), '')).strip()
-        if obs_type == 'nan':
-            obs_type = ''
-
-        permit_act = str(row.get(col_map.get('permit_activity', ''), '')).strip()
-        if permit_act == 'nan':
-            permit_act = ''
-            
-        remarks = str(row.get(col_map.get('remarks', ''), '')).strip()
-        if remarks == 'nan':
-            remarks = ''
+        resp_person = clean_cell_str(row.get(col_map.get('responsible_person', '')) if 'responsible_person' in col_map else '')
+        category = clean_cell_str(row.get(col_map.get('category', '')) if 'category' in col_map else '') or 'General'
+        status = clean_cell_str(row.get(col_map.get('status', '')) if 'status' in col_map else '') or 'Closed'
+        resp_company = clean_cell_str(row.get(col_map.get('responsible_company', '')) if 'responsible_company' in col_map else '') or 'HEISCO'
+        assignee_company = clean_cell_str(row.get(col_map.get('assignee_company', '')) if 'assignee_company' in col_map else '') or resp_company
+        obs_type = clean_cell_str(row.get(col_map.get('observation_type', '')) if 'observation_type' in col_map else '')
+        permit_act = clean_cell_str(row.get(col_map.get('permit_activity', '')) if 'permit_activity' in col_map else '')
+        remarks = clean_cell_str(row.get(col_map.get('remarks', '')) if 'remarks' in col_map else '')
+        corr_action = clean_cell_str(row.get(col_map.get('corrective_action', '')) if 'corrective_action' in col_map else '')
 
         record = {
             'original_sn': sn_val,
             'area': area_val,
             'finding': finding_val,
-            'corrective_action': str(row.get(col_map.get('corrective_action', ''), '')).strip(),
+            'corrective_action': corr_action,
             'raw_observation_date': raw_date,
             'observation_date': std_date,
             'responsible_person': resp_person,
@@ -175,22 +313,41 @@ def read_weekly_observation_excel(file_path: str) -> List[Dict[str, Any]]:
 def read_names_locations_excel(file_path: str) -> Dict[str, Dict[str, Any]]:
     """
     Read Names + Locations excel file.
-    Supports two formats:
-    Format 1 (Column based):
-    • LOCATION | SAFETY OFFICER | SUPERVISOR | ENGINEER
-    
-    Format 2 (Roster based, like sample PDF 2):
-    • EMPLOYEE NAME | PROJECT DEISGNATION | LOCATION (or date col like 09-Sep)
-    
-    Returns mapping keyed by normalized location, mapping:
-    - safety_officer (primary) & safety_officers (list)
-    - supervisor (primary) & supervisors (list)
-    - engineer (primary) & engineers (list)
+    Robust against:
+    - Missing or empty files (returns empty dict gracefully)
+    - Title banner rows (scans header row 0 to 5)
+    - Format 1 (Column based): LOCATION | SAFETY OFFICER | SUPERVISOR | ENGINEER
+    - Format 2 (Roster based): EMPLOYEE NAME | DESIGNATION | LOCATION
     """
+    if not file_path or not os.path.exists(file_path):
+        return {}
+
     from services.mapping import normalize_location_key
     
-    df = pd.read_excel(file_path)
-    
+    # Try reading candidate header rows to find column match
+    df = None
+    try:
+        excel_file = pd.ExcelFile(file_path)
+        sheet = excel_file.sheet_names[0]
+        for header_idx in range(6):
+            candidate = excel_file.parse(sheet, header=header_idx)
+            if candidate.empty:
+                continue
+            cols_norm = [normalize_col(c) for c in candidate.columns]
+            if any(k in cols_norm for k in ['location', 'safetyofficer', 'supervisor', 'engineer', 'employeename', 'designation']):
+                df = candidate
+                break
+        if df is None:
+            df = excel_file.parse(sheet)
+    except Exception:
+        try:
+            df = pd.read_excel(file_path)
+        except Exception:
+            return {}
+
+    if df is None or df.empty:
+        return {}
+
     # Check if this is a roster format (EMPLOYEE NAME + DESIGNATION + LOCATION)
     emp_col = None
     desig_col = None
@@ -221,7 +378,6 @@ def read_names_locations_excel(file_path: str) -> Dict[str, Dict[str, Any]]:
         elif 'projectmanager' in norm or norm in ['pm', 'manager']:
             pm_col = col
         elif not roster_loc_col and ('sep' in norm or 'gosp' in norm or 'date' in norm):
-            # Often the location column in the roster is named after the date, e.g. "09-Sep"
             roster_loc_col = col
 
     mapping: Dict[str, Dict[str, Any]] = {}
@@ -230,11 +386,11 @@ def read_names_locations_excel(file_path: str) -> Dict[str, Dict[str, Any]]:
     if emp_col and desig_col:
         target_loc_col = roster_loc_col or loc_col or (df.columns[2] if len(df.columns) >= 3 else None)
         for _, row in df.iterrows():
-            name = str(row.get(emp_col, '')).strip()
-            desig = str(row.get(desig_col, '')).strip().upper()
-            loc_raw = str(row.get(target_loc_col, '')).strip() if target_loc_col else ''
+            name = clean_cell_str(row.get(emp_col, ''))
+            desig = clean_cell_str(row.get(desig_col, '')).upper()
+            loc_raw = clean_cell_str(row.get(target_loc_col, '')) if target_loc_col else ''
             
-            if not name or name.lower() == 'nan' or not loc_raw or loc_raw.lower() == 'nan':
+            if not name or not loc_raw:
                 continue
                 
             key = normalize_location_key(loc_raw)
@@ -268,17 +424,13 @@ def read_names_locations_excel(file_path: str) -> Dict[str, Dict[str, Any]]:
     # Case B: Column Based Format (LOCATION + SAFETY OFFICER + SUPERVISOR + ENGINEER)
     else:
         for _, row in df.iterrows():
-            loc_raw = str(row.get(loc_col, '')).strip() if loc_col else ''
-            if not loc_raw or loc_raw.lower() == 'nan':
+            loc_raw = clean_cell_str(row.get(loc_col, '')) if loc_col else ''
+            if not loc_raw:
                 continue
                 
-            so = str(row.get(so_col, '')).strip() if so_col else ''
-            sup = str(row.get(sup_col, '')).strip() if sup_col else ''
-            eng = str(row.get(eng_col, '')).strip() if eng_col else ''
-            
-            so = '' if so.lower() == 'nan' else so
-            sup = '' if sup.lower() == 'nan' else sup
-            eng = '' if eng.lower() == 'nan' else eng
+            so = clean_cell_str(row.get(so_col, '')) if so_col else ''
+            sup = clean_cell_str(row.get(sup_col, '')) if sup_col else ''
+            eng = clean_cell_str(row.get(eng_col, '')) if eng_col else ''
             
             key = normalize_location_key(loc_raw)
             mapping_entry = {
@@ -293,6 +445,7 @@ def read_names_locations_excel(file_path: str) -> Dict[str, Dict[str, Any]]:
             mapping[key] = mapping_entry
 
     return mapping
+
 
 
 def match_site_key(raw_site: str) -> str:

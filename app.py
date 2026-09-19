@@ -51,6 +51,16 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
 )
 
+@app.route('/public/<path:filename>')
+def serve_public(filename):
+    return send_file(os.path.join(BASE_DIR, 'public', filename))
+
+@app.route('/assets/<path:filename>')
+def serve_assets(filename):
+    if os.path.exists(os.path.join(BASE_DIR, 'public', 'assets', filename)):
+        return send_file(os.path.join(BASE_DIR, 'public', 'assets', filename))
+    return send_file(os.path.join(BASE_DIR, 'static', 'assets', filename))
+
 @app.context_processor
 def inject_user_context():
     username = session.get("username") or session.get("user") or "admin"
@@ -486,13 +496,23 @@ def generate_signage():
     prs = Presentation()
     slide = prs.slides.add_slide(prs.slide_layouts[6])  # blank slide
 
-    # 1. LOGOS
-    if os.path.exists(enppi_logo):
-        slide.shapes.add_picture(enppi_logo, Inches(0.5), Inches(0.3), Inches(2.5), Inches(0.8))
-    if os.path.exists(heisco_logo):
-        slide.shapes.add_picture(heisco_logo, Inches(3.2), Inches(0.3), Inches(2.5), Inches(0.8))
-    if os.path.exists(aramco_logo):
-        slide.shapes.add_picture(aramco_logo, Inches(6.5), Inches(0.3), Inches(2.5), Inches(0.8))
+    # 1. TOP COMMON HEADER (header_final.png)
+    header_final = "public/assets/header_final.png"
+    if not os.path.exists(header_final):
+        header_final = "static/assets/header_final.png"
+    if not os.path.exists(header_final):
+        header_final = "static/header_final.png"
+
+    if os.path.exists(header_final):
+        # Add header_final.png at the very top as common header across width
+        slide.shapes.add_picture(header_final, Inches(0.5), Inches(0.2), Inches(9.0), Inches(0.95))
+    else:
+        if os.path.exists(enppi_logo):
+            slide.shapes.add_picture(enppi_logo, Inches(0.5), Inches(0.3), Inches(2.5), Inches(0.8))
+        if os.path.exists(heisco_logo):
+            slide.shapes.add_picture(heisco_logo, Inches(3.2), Inches(0.3), Inches(2.5), Inches(0.8))
+        if os.path.exists(aramco_logo):
+            slide.shapes.add_picture(aramco_logo, Inches(6.5), Inches(0.3), Inches(2.5), Inches(0.8))
 
     # 2. HEADER BAR (Solid Yellow Caution Header)
     header = slide.shapes.add_shape(1, Inches(0.5), Inches(1.3), Inches(9), Inches(1))
@@ -600,58 +620,198 @@ def generate_observations_report():
     - Auto-generate CC Name (DEBOTTLENECK PRODUCTION FACILITIES ABQAIQ BI NO. 10-10303)
     - Auto-map Safety Officer / Supervisor / Engineer
     - Auto-format HEISCO–ENPPI–Aramco style
-    - Export Word
+    - Export Word (.docx) with complete exception handling
     """
-    enppi_logo = "static/logos/enppi.png"
-    heisco_logo = "static/logos/heisco.png"
-    aramco_logo = "static/logos/aramco.png"
-    pictogram_path = "static/pictograms/pictogram.png"
+    import traceback
 
-    weekly_file = request.files.get("weekly_file")
-    names_file = request.files.get("names_file")
+    # 1. Verify and create runtime directories (Render / Linux resilience)
+    try:
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        os.makedirs(SAMPLE_DIR, exist_ok=True)
+    except Exception as dir_err:
+        tb = traceback.format_exc()
+        print(f"[ERROR] Directory initialization failed: {dir_err}\n{tb}")
+        return render_template(
+            "observations.html",
+            error=f"Storage directory initialization error: {str(dir_err)}",
+            detailed_error=tb,
+            exception_type=type(dir_err).__name__
+        ), 200
 
-    ensure_sample_files_exist()
-    weekly_path = os.path.join(SAMPLE_DIR, "Weekly_Observation_Sample.xlsx")
-    names_path = os.path.join(SAMPLE_DIR, "Names_Locations_Sample.xlsx")
+    try:
+        weekly_file = request.files.get("weekly_file")
+        names_file = request.files.get("names_file")
 
-    if weekly_file and weekly_file.filename:
-        weekly_path = os.path.join(UPLOAD_DIR, "uploaded_weekly.xlsx")
-        weekly_file.save(weekly_path)
+        # 2. Ensure baseline sample files exist as fallbacks
+        try:
+            ensure_sample_files_exist()
+        except Exception as sample_err:
+            print(f"[WARN] ensure_sample_files_exist error: {sample_err}")
 
-    if names_file and names_file.filename:
-        names_path = os.path.join(UPLOAD_DIR, "uploaded_names.xlsx")
-        names_file.save(names_path)
+        weekly_path = os.path.join(SAMPLE_DIR, "Weekly_Observation_Sample.xlsx")
+        names_path = os.path.join(SAMPLE_DIR, "Names_Locations_Sample.xlsx")
 
-    raw_obs = read_weekly_observation_excel(weekly_path)
-    names_map = read_names_locations_excel(names_path)
+        # 3. Handle Weekly Observations File Upload
+        if weekly_file and weekly_file.filename and weekly_file.filename.strip():
+            filename_lower = weekly_file.filename.lower()
+            if not any(filename_lower.endswith(ext) for ext in ['.xlsx', '.xls', '.xlsm']):
+                return render_template(
+                    "observations.html",
+                    error=f"Invalid file format: '{weekly_file.filename}'. Please upload an Excel file (.xlsx or .xls).",
+                    detailed_error=f"File extension not permitted. Expected Excel workbook, received: {weekly_file.filename}",
+                    exception_type="InvalidFileFormatError"
+                ), 200
 
-    if not raw_obs:
-        return render_template("observations.html", error="Could not extract observations from Excel file.")
+            uploaded_weekly = os.path.join(UPLOAD_DIR, "uploaded_weekly.xlsx")
+            try:
+                weekly_file.save(uploaded_weekly)
+                weekly_path = uploaded_weekly
+            except Exception as save_err:
+                tb = traceback.format_exc()
+                print(f"[ERROR] Failed to save weekly file: {save_err}\n{tb}")
+                return render_template(
+                    "observations.html",
+                    error=f"Could not save uploaded observations file: {str(save_err)}",
+                    detailed_error=tb,
+                    exception_type=type(save_err).__name__
+                ), 200
 
-    processed = process_and_map_observations(raw_obs, names_map)
+        # Verify weekly file exists on disk
+        if not os.path.exists(weekly_path):
+            return render_template(
+                "observations.html",
+                error="Weekly observations spreadsheet not found. Please upload your Excel observations file.",
+                detailed_error=f"File not found at expected path: '{weekly_path}'.",
+                exception_type="FileNotFoundError"
+            ), 200
 
-    reviewed_by_name = request.form.get("reviewed_by_name", "AHMED GHALWASH").strip() or "AHMED GHALWASH"
-    reviewed_by_date = request.form.get("reviewed_by_date", "").strip() or datetime.date.today().strftime("%d/%m/%Y")
+        # 4. Handle Names Mapping File Upload (Optional)
+        if names_file and names_file.filename and names_file.filename.strip():
+            uploaded_names = os.path.join(UPLOAD_DIR, "uploaded_names.xlsx")
+            try:
+                names_file.save(uploaded_names)
+                names_path = uploaded_names
+            except Exception as names_save_err:
+                print(f"[WARN] Could not save uploaded names file: {names_save_err}")
+                # Non-fatal: falls back to sample or built-in Abqaiq roster
 
-    pages_data = split_into_pages(processed, reviewed_by_date=reviewed_by_date, reviewed_by_name=reviewed_by_name)
+        # 5. Read Excel Files with try/except
+        try:
+            raw_obs = read_weekly_observation_excel(weekly_path)
+        except Exception as read_err:
+            tb = traceback.format_exc()
+            print(f"[ERROR] read_weekly_observation_excel failed: {read_err}\n{tb}")
+            return render_template(
+                "observations.html",
+                error=f"Error reading Weekly Observations Excel file: {str(read_err)}",
+                detailed_error=tb,
+                exception_type=type(read_err).__name__
+            ), 200
 
-    output_word_path = os.path.join(OUTPUT_DIR, "HSE_Observation_Register.docx")
-    generate_observation_register_doc(pages_data, output_word_path)
+        if not raw_obs or len(raw_obs) == 0:
+            return render_template(
+                "observations.html",
+                error="Could not find any observation records in the Excel file. Please ensure the sheet has rows with Location/Area, Finding/Observation, and Date.",
+                detailed_error=f"read_weekly_observation_excel returned 0 records for '{weekly_path}'. Check if columns exist or if data is located on an unmapped sheet.",
+                exception_type="EmptyObservationsError"
+            ), 200
 
-    # Save to session
-    state = load_current_state()
-    state["processed"] = processed
-    state["names_mapping"] = names_map
-    state["reviewed_by_name"] = reviewed_by_name
-    state["reviewed_by_date"] = reviewed_by_date
-    save_current_state(state)
+        # Read Names Mapping (safe, non-blocking)
+        names_map = {}
+        if os.path.exists(names_path):
+            try:
+                names_map = read_names_locations_excel(names_path)
+            except Exception as names_err:
+                print(f"[WARN] Error reading names mapping from '{names_path}': {names_err}")
+                names_map = {}
 
-    return send_file(
-        output_word_path,
-        as_attachment=True,
-        download_name="HSE_Observation_Register.docx",
-        mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    )
+        # 6. Process & Map Observations
+        try:
+            processed = process_and_map_observations(raw_obs, names_map)
+        except Exception as map_err:
+            tb = traceback.format_exc()
+            print(f"[ERROR] process_and_map_observations failed: {map_err}\n{tb}")
+            return render_template(
+                "observations.html",
+                error=f"Error mapping observations data: {str(map_err)}",
+                detailed_error=tb,
+                exception_type=type(map_err).__name__
+            ), 200
+
+        reviewed_by_name = request.form.get("reviewed_by_name", "AHMED GHALWASH").strip() or "AHMED GHALWASH"
+        reviewed_by_date = request.form.get("reviewed_by_date", "").strip() or datetime.date.today().strftime("%d/%m/%Y")
+
+        try:
+            pages_data = split_into_pages(processed, reviewed_by_date=reviewed_by_date, reviewed_by_name=reviewed_by_name)
+        except Exception as page_err:
+            tb = traceback.format_exc()
+            print(f"[ERROR] split_into_pages failed: {page_err}\n{tb}")
+            return render_template(
+                "observations.html",
+                error=f"Error formatting pages for observations register: {str(page_err)}",
+                detailed_error=tb,
+                exception_type=type(page_err).__name__
+            ), 200
+
+        if not pages_data:
+            return render_template(
+                "observations.html",
+                error="Pagination resulted in 0 pages. No valid records available to format.",
+                detailed_error="split_into_pages produced an empty pages_data list.",
+                exception_type="EmptyPagesError"
+            ), 200
+
+        # 7. Word Document Generation (.docx)
+        output_word_path = os.path.join(OUTPUT_DIR, "HSE_Observation_Register.docx")
+        try:
+            generate_observation_register_doc(pages_data, output_word_path)
+        except Exception as doc_err:
+            tb = traceback.format_exc()
+            print(f"[ERROR] generate_observation_register_doc failed: {doc_err}\n{tb}")
+            return render_template(
+                "observations.html",
+                error=f"Error generating Word document (.docx): {str(doc_err)}",
+                detailed_error=tb,
+                exception_type=type(doc_err).__name__
+            ), 200
+
+        if not os.path.exists(output_word_path):
+            return render_template(
+                "observations.html",
+                error="Word document generation completed, but output file was not found on disk.",
+                detailed_error=f"Expected document at '{output_word_path}'.",
+                exception_type="OutputFileMissingError"
+            ), 200
+
+        # 8. Save State to Session (Safe)
+        try:
+            state = load_current_state()
+            state["processed"] = processed
+            state["names_mapping"] = names_map
+            state["reviewed_by_name"] = reviewed_by_name
+            state["reviewed_by_date"] = reviewed_by_date
+            save_current_state(state)
+        except Exception as state_err:
+            print(f"[WARN] Failed to update session state: {state_err}")
+
+        # 9. Send Generated File as Download
+        return send_file(
+            output_word_path,
+            as_attachment=True,
+            download_name="HSE_Observation_Register.docx",
+            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+
+    except Exception as unhandled_err:
+        tb = traceback.format_exc()
+        print(f"[CRITICAL ERROR] Unhandled exception in generate_observations_report: {unhandled_err}\n{tb}")
+        return render_template(
+            "observations.html",
+            error=f"Unexpected error generating observations report: {str(unhandled_err)}",
+            detailed_error=tb,
+            exception_type=type(unhandled_err).__name__
+        ), 200
 
 @app.route("/generate_weekly_report", methods=["POST"])
 @login_required

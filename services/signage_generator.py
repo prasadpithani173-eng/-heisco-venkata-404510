@@ -138,36 +138,55 @@ def ensure_base_template(template_path: str = "templates/signage_template.png", 
     draw.rectangle([(10, 10), (width - 10, height - 10)], outline="black", width=6)
     draw.rectangle([(18, 18), (width - 18, height - 18)], outline="black", width=2)
 
-    # Top header logos
-    if os.path.exists("public/assets/enppi_logo.png"):
+    # Top common header (header_final.png)
+    header_img_path = "public/assets/header_final.png"
+    if not os.path.exists(header_img_path):
+        header_img_path = "static/assets/header_final.png"
+
+    if os.path.exists(header_img_path):
         try:
-            enppi = Image.open("public/assets/enppi_logo.png").convert("RGBA")
-            enppi_w = int(enppi.width * 65 / enppi.height)
-            enppi = enppi.resize((enppi_w, 65))
-            base.paste(enppi, (35, 35), enppi)
+            h_img = Image.open(header_img_path).convert("RGBA")
+            h_target_w = width - 40
+            h_target_h = int(h_img.height * h_target_w / h_img.width)
+            if h_target_h > 95:
+                h_target_h = 95
+                h_target_w = int(h_img.width * h_target_h / h_img.height)
+            h_img_res = h_img.resize((h_target_w, h_target_h), Image.Resampling.LANCZOS)
+            h_x = (width - h_target_w) // 2
+            base.paste(h_img_res, (h_x, 22), h_img_res)
         except Exception:
             pass
+    else:
+        # Fallback if header_final.png is missing
+        if os.path.exists("public/assets/enppi_logo.png"):
+            try:
+                enppi = Image.open("public/assets/enppi_logo.png").convert("RGBA")
+                enppi_w = int(enppi.width * 65 / enppi.height)
+                enppi = enppi.resize((enppi_w, 65))
+                base.paste(enppi, (35, 35), enppi)
+            except Exception:
+                pass
 
-    if os.path.exists("public/assets/aramco_overseas_logo.png"):
+        if os.path.exists("public/assets/aramco_overseas_logo.png"):
+            try:
+                aramco = Image.open("public/assets/aramco_overseas_logo.png").convert("RGBA")
+                aramco_w = int(aramco.width * 65 / aramco.height)
+                aramco = aramco.resize((aramco_w, 65))
+                base.paste(aramco, (width - aramco_w - 35, 35), aramco)
+            except Exception:
+                pass
+
         try:
-            aramco = Image.open("public/assets/aramco_overseas_logo.png").convert("RGBA")
-            aramco_w = int(aramco.width * 65 / aramco.height)
-            aramco = aramco.resize((aramco_w, 65))
-            base.paste(aramco, (width - aramco_w - 35, 35), aramco)
+            f_proj = ImageFont.truetype("arialbd.ttf", 24)
+            f_bi = ImageFont.truetype("arialbd.ttf", 20)
+            t1 = "DEBOTTLENECK PRODUCTION FACILITIES AT ABQAIQ"
+            t2 = "BI NO. 10-10303"
+            b1 = draw.textbbox((0, 0), t1, font=f_proj)
+            draw.text(((width - (b1[2] - b1[0])) / 2, 42), t1, font=f_proj, fill="black")
+            b2 = draw.textbbox((0, 0), t2, font=f_bi)
+            draw.text(((width - (b2[2] - b2[0])) / 2, 75), t2, font=f_bi, fill="black")
         except Exception:
             pass
-
-    try:
-        f_proj = ImageFont.truetype("arialbd.ttf", 24)
-        f_bi = ImageFont.truetype("arialbd.ttf", 20)
-        t1 = "DEBOTTLENECK PRODUCTION FACILITIES AT ABQAIQ"
-        t2 = "BI NO. 10-10303"
-        b1 = draw.textbbox((0, 0), t1, font=f_proj)
-        draw.text(((width - (b1[2] - b1[0])) / 2, 42), t1, font=f_proj, fill="black")
-        b2 = draw.textbbox((0, 0), t2, font=f_bi)
-        draw.text(((width - (b2[2] - b2[0])) / 2, 75), t2, font=f_bi, fill="black")
-    except Exception:
-        pass
 
     os.makedirs(os.path.dirname(template_path) or ".", exist_ok=True)
     base.save(template_path, format="PNG")

@@ -289,14 +289,17 @@
 </head>
 <body>
 
+    <!-- Common Top Header Banner: Full Width, Responsive -->
+    <div class="common-header-banner" style="width: 100%; background: #ffffff; border-bottom: 1px solid #e2e8f0; text-align: center; padding: 6px 16px;">
+        <img src="/public/assets/header_final.png" onerror="if(!this.src.includes('/assets/header_final.png')) this.src='/assets/header_final.png';" alt="DEBOTTLENECK PRODUCTION FACILITIES - ABQAIQ" style="max-height: 52px; width: auto; max-width: 100%; object-fit: contain; display: inline-block;">
+    </div>
+
     <!-- Top Navigation Bar: Pure White, 64px, Sticky, Subtle Shadow -->
     <header class="top-navbar" id="topNavComponent">
         <div class="top-left">
             <a href="/dashboard" class="nav-back-link">&larr; Dashboard</a>
-            <div class="logo-group">
-                <img src="/static/logos/heisco.png" alt="HEISCO">
-                <img src="/static/logos/enppi.png" alt="ENPPI">
-                <img src="/static/logos/aramco.png" alt="Saudi Aramco">
+            <div class="header-final-top" style="max-width: 320px;">
+                <img src="/public/assets/header_final.png" onerror="if(!this.src.includes('/assets/header_final.png')) this.src='/assets/header_final.png';" alt="HEISCO - ENPPI - Saudi Aramco" style="height: 38px; width: auto; max-width: 100%; object-fit: contain;">
             </div>
             <div class="logo-vdivider"></div>
             <div class="top-header-text">
@@ -347,6 +350,27 @@
                 <span class="preset-chip" onclick="setSignage('Safety Glasses Required')">Safety Glasses Required</span>
             </div>
         </form>
+
+        <!-- Live Signage Preview with Common Header -->
+        <div style="margin-top: 28px; border: 2px solid #0f172a; border-radius: 8px; overflow: hidden; background: #ffffff; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);">
+            <div style="background: #ffffff; padding: 10px 16px; border-bottom: 2px solid #0f172a; text-align: center;">
+                <img src="/public/assets/header_final.png" onerror="if(!this.src.includes('/assets/header_final.png')) this.src='/assets/header_final.png';" alt="Common Top Signage Header" style="width: 100%; max-height: 58px; object-fit: contain; display: block; margin: 0 auto;">
+            </div>
+            <div style="background: #FFEE00; color: #000; font-family: Arial, sans-serif; font-weight: 900; font-size: 26px; text-align: center; padding: 10px; border-bottom: 2px solid #0f172a; letter-spacing: 2px;">
+                CAUTION
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-around; padding: 22px; gap: 20px; background: #ffffff; flex-wrap: wrap;">
+                <div style="border: 2px solid #0f172a; border-radius: 6px; padding: 12px; background: #ffffff;">
+                    <img src="/static/pictograms/pictogram.png" onerror="this.src='/static/icons/ppe_icon.png';" alt="Hazard Pictogram" style="width: 110px; height: 110px; object-fit: contain;">
+                </div>
+                <div style="flex: 1; min-width: 240px; text-align: left;">
+                    <div id="preview_title" style="font-size: 24px; font-weight: 900; color: #0f172a; font-family: Arial, sans-serif; margin-bottom: 8px;">{{ signage_name or 'PPE FREE ZONE' }}</div>
+                    <div style="font-size: 15px; color: #334155; margin-bottom: 4px; font-weight: 500;">پی پی ای فری زون (Urdu)</div>
+                    <div style="font-size: 15px; color: #334155; margin-bottom: 4px; font-weight: 500;">पीपीई मुक्त क्षेत्र (Hindi)</div>
+                    <div style="font-size: 15px; color: #334155; font-weight: 500;">منطقة خالية من معدات الحماية الشخصية (Arabic)</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <footer class="footer">

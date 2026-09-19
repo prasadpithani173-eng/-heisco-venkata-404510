@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { HSE_UTILITY_LINKS, SIDEBAR_NAV_ITEMS } from '../data/hseUtilities';
 import { HSEUtilityLink, UserSession } from '../types';
+import Header from './Header';
 
 interface DashboardLayoutProps {
   userSession?: UserSession;
@@ -263,6 +264,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         {/* MAIN APPLICATION CONTAINER (Top Nav + Main Content)                     */}
         {/* ========================================================================= */}
         <div className="flex-1 flex flex-col min-w-0 bg-[#002244] text-slate-100 overflow-y-auto">
+          {/* Top Common Responsive Header */}
+          <Header />
           
           {/* ======================================================================= */}
           {/* TOP NAVIGATION BAR                                                      */}
@@ -368,13 +371,19 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   </p>
                 </div>
 
-                {/* Corporate Logos Display */}
-                <div className="flex items-center gap-3 bg-white/95 p-3 rounded-xl shadow-lg border border-white/20 self-start md:self-center">
-                  <img src="/static/logos/enppi.png" alt="ENPPI Logo" className="h-9 object-contain" />
-                  <div className="w-[1px] h-7 bg-slate-300" />
-                  <img src="/static/logos/heisco.png" alt="HEISCO Logo" className="h-9 object-contain" />
-                  <div className="w-[1px] h-7 bg-slate-300" />
-                  <img src="/static/logos/aramco.png" alt="Saudi Aramco Logo" className="h-9 object-contain" />
+                {/* Corporate Header Display */}
+                <div className="bg-white/95 p-2 rounded-xl shadow-lg border border-white/20 self-start md:self-center max-w-sm w-full">
+                  <img
+                    src="/public/assets/header_final.png"
+                    alt="DEBOTTLENECK PRODUCTION FACILITIES - ABQAIQ"
+                    className="w-full h-11 object-contain block mx-auto"
+                    onError={(e) => {
+                      const target = e.currentTarget as HTMLImageElement;
+                      if (!target.src.includes('/assets/header_final.png')) {
+                        target.src = '/assets/header_final.png';
+                      }
+                    }}
+                  />
                 </div>
               </div>
 
