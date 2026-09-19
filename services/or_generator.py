@@ -216,13 +216,13 @@ def generate_observation_register_doc(pages_data: List[Dict[str, Any]], output_p
             
             row_data = [
                 str(item.get('sn', '')),
-                str(item.get('area', '')),
-                str(item.get('finding', '')),
-                str(item.get('corrective_action', '')),
-                str(item.get('responsible_person', '') or 'Site Supervisor'),
-                str(item.get('observation_date', '')),
-                str(item.get('doc_type', 'Major')),
-                str(item.get('status', 'Closed'))
+                str(item.get('LOCATION') or item.get('location') or item.get('area', '')),
+                str(item.get('OBSERVATION') or item.get('observation') or item.get('finding', '')),
+                str(item.get('RECOMMENDATION') or item.get('recommendation') or item.get('corrective_action', '')),
+                str(item.get('RESPONSIBLE_ENTITY') or item.get('RESPONSIBLE ENTITY') or item.get('responsible_entity') or item.get('responsible_person', '') or 'Site Supervisor'),
+                str(item.get('DUE_DATE') or item.get('DUE DATE') or item.get('due_date') or item.get('observation_date', '')),
+                str(item.get('TYPE') or item.get('type') or item.get('doc_type', 'Major')),
+                str(item.get('STATUS') or item.get('status', 'Closed'))
             ]
             
             for col_idx, (val, width) in enumerate(zip(row_data, col_widths)):
@@ -263,17 +263,15 @@ def generate_observation_register_doc(pages_data: List[Dict[str, Any]], output_p
         # Helper to clean out any default title names
         banned_names = {'site supervisor', 'site engineer', 'project manager', 'safety officer', 'nan', 'none'}
         
-        so_name = page.get('observed_by', '').strip()
+        so_name = (page.get('Dynamic_Raised_By') or page.get('observed_by', '')).strip()
         if so_name.lower() in banned_names:
             so_name = ''
             
-        sup_name = page.get('status_by', '').strip()
+        sup_name = (page.get('Dynamic_Assignee') or page.get('status_by', '')).strip()
         if sup_name.lower() in banned_names:
             sup_name = ''
             
-        eng_name = page.get('reviewed_by', '').strip()
-        if eng_name.lower() in banned_names:
-            eng_name = ''
+        eng_name = 'AHMED GHALWASH'
 
         # Col 0: Observed By: Safety officer
         c0 = sig_table.cell(0, 0)

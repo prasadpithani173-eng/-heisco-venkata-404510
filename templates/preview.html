@@ -515,57 +515,73 @@
       </div>
     </form>
 
-    <!-- Table: First 20 Rows -->
+    <!-- Grouped Table Layout (Max 3 records per container unit) -->
     <div class="table-section">
-      <div class="section-heading">
-        <h2>Preview (Showing first {{ preview_records|length }} of {{ total_records }} sorted records)</h2>
-        <span class="badge-count">Auto-sorted by Observation Date</span>
+      <div class="section-heading" style="margin-bottom: 20px;">
+        <div>
+          <h2 style="font-size: 16px; font-weight: 700; color: #1a365d; margin: 0 0 4px 0;">
+            Grouped Word Document Layout Preview (Max 3 Records Per Unit)
+          </h2>
+          <span class="badge-count" style="font-size: 13px; color: #64748b;">
+            Displaying {{ report_groups|length }} Page-Block Units &bull; {{ total_records }} Total Observations Auto-Mapped &amp; Sorted
+          </span>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <a href="/download-observations" class="btn-back" style="background: #1a365d; color: #ffffff; border-color: #1a365d; font-weight: 600; text-decoration: none; padding: 8px 16px; border-radius: 6px;" id="btn-download-word-register">
+            📄 Download Word Register (.docx)
+          </a>
+        </div>
       </div>
 
-      <div class="table-container">
-        <table id="preview-table">
-          <thead>
-            <tr>
-              <th class="text-center">S.N</th>
-              <th class="text-center">Inspection ID</th>
-              <th class="text-center">Date</th>
-              <th>Location</th>
-              <th>Observation Finding</th>
-              <th>Corrective Action</th>
-              <th>Observed By (Safety Officer)</th>
-              <th>Status By (Eng / Sup)</th>
-              <th>Reviewed By (PM)</th>
-              <th class="text-center">Type</th>
-              <th class="text-center">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in preview_records %}
-            <tr>
-              <td class="text-center">{{ row.sn }}</td>
-              <td class="text-center" style="font-weight: 600;">{{ row.inspection_id }}</td>
-              <td class="text-center" style="white-space: nowrap;">{{ row.observation_date }}</td>
-              <td style="white-space: nowrap; font-weight: 500;">{{ row.area }}</td>
-              <td class="truncate" title="{{ row.finding }}">{{ row.finding }}</td>
-              <td class="truncate" title="{{ row.corrective_action }}">{{ row.corrective_action }}</td>
-              <td style="white-space: nowrap; font-weight: 500;">{{ row.observed_by }}</td>
-              <td style="white-space: nowrap; font-weight: 500;">{{ row.status_by }}</td>
-              <td style="white-space: nowrap; font-weight: 500;">{{ row.reviewed_by }}</td>
-              <td class="text-center">
-                <span class="{{ 'type-major' if row.doc_type == 'Major' else 'type-minor' }}">
-                  {{ row.doc_type }}
-                </span>
-              </td>
-              <td class="text-center">
-                <span class="{{ 'status-closed' if row.status|lower == 'closed' else 'status-open' }}">
-                  {{ row.status }}
-                </span>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      {% for group in report_groups %}
+      <div class="hse-report-card" style="border:1px solid #1a365d; padding:15px; margin-bottom:30px; font-family:Arial; page-break-inside:avoid;">
+          <div style="display:flex; justify-content:space-between; font-weight:bold; color:#1a365d; margin-bottom:10px;">
+              <span>Ref No: {{ group.Generated_Ref_No }}</span>
+              <span>Date: {{ group.Dynamic_First_Record_Date }}</span>
+          </div>
+          <div style="margin-bottom:10px;">
+              <strong>CC Name:</strong> DEBOTTLENECK PRODUCTION FACILITIES ABQAIQ BI NO. 10-10303
+          </div>
+          <table style="width:100%; border-collapse:collapse; font-size:11px;">
+              <thead>
+                  <tr style="background-color:#1a365d; color:#ffffff;">
+                      <th style="border:1px solid #cbd5e1; padding:6px; text-align:center;">LOCATION</th>
+                      <th style="border:1px solid #cbd5e1; padding:6px; text-align:left;">OBSERVATION</th>
+                      <th style="border:1px solid #cbd5e1; padding:6px; text-align:left;">RECOMMENDATION</th>
+                      <th style="border:1px solid #cbd5e1; padding:6px; text-align:center;">RESPONSIBLE ENTITY</th>
+                      <th style="border:1px solid #cbd5e1; padding:6px; text-align:center;">DUE DATE</th>
+                      <th style="border:1px solid #cbd5e1; padding:6px; text-align:center;">TYPE</th>
+                      <th style="border:1px solid #cbd5e1; padding:6px; text-align:center;">STATUS</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  {% for row in group.records %}
+                  <tr style="background-color: {{ '#f8fafc' if loop.index is even else '#ffffff' }};">
+                      <td style="border:1px solid #cbd5e1; padding:6px; text-align:center; font-weight:600; white-space:nowrap;">{{ row.LOCATION or row.location or row.area }}</td>
+                      <td style="border:1px solid #cbd5e1; padding:6px; line-height:1.4;">{{ row.OBSERVATION or row.observation or row.finding }}</td>
+                      <td style="border:1px solid #cbd5e1; padding:6px; line-height:1.4;">{{ row.RECOMMENDATION or row.recommendation or row.corrective_action }}</td>
+                      <td style="border:1px solid #cbd5e1; padding:6px; text-align:center; white-space:nowrap;">{{ row.RESPONSIBLE_ENTITY or row.responsible_entity or row.responsible_person or 'Site Supervisor' }}</td>
+                      <td style="border:1px solid #cbd5e1; padding:6px; text-align:center; white-space:nowrap; font-weight:500;">{{ row.DUE_DATE or row.due_date or row.observation_date }}</td>
+                      <td style="border:1px solid #cbd5e1; padding:6px; text-align:center; font-weight:600; color: {{ '#b45309' if (row.TYPE or row.type or row.doc_type) == 'Major' else '#475569' }};">
+                          {{ row.TYPE or row.type or row.doc_type }}
+                      </td>
+                      <td style="border:1px solid #cbd5e1; padding:6px; text-align:center;">
+                          <span style="display:inline-block; padding:2px 8px; border-radius:4px; font-weight:600; font-size:10.5px; background-color: {{ '#dcfce7' if (row.STATUS or row.status)|lower == 'closed' else '#fee2e2' }}; color: {{ '#15803d' if (row.STATUS or row.status)|lower == 'closed' else '#b91c1c' }};">
+                              {{ row.STATUS or row.status }}
+                          </span>
+                      </td>
+                  </tr>
+                  {% endfor %}
+              </tbody>
+          </table>
+          <div style="font-size:10px; color:#64748b; margin-top:5px; text-align:right;">*Note: Type Minor & Major Status Open & Closed</div>
+          <div style="margin-top:20px; display:flex; justify-content:space-between; font-size:11px; font-weight:500; border-top:1px dashed #cbd5e1; padding-top:10px;">
+              <div>Observed By: Safety officer Name: {{ group.Dynamic_Raised_By }}</div>
+              <div>Reviewed By: Project Manager Name: AHMED GHALWASH</div>
+              <div>Status By: Site Engineer Name: {{ group.Dynamic_Assignee }}</div>
+          </div>
       </div>
+      {% endfor %}
     </div>
   </div>
 </body>

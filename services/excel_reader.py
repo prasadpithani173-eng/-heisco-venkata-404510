@@ -97,127 +97,208 @@ def format_date_for_jsl(val: Any) -> str:
     except Exception:
         return val_str
 
+def process_risk_level_to_type(val: Any) -> str:
+    """Process risk level value: 'Low' to 'Minor', 'Medium' and 'High' to 'Major'."""
+    s = clean_cell_str(val).strip().upper()
+    if not s:
+        return "Minor"
+    if "LOW" in s or "MINOR" in s:
+        return "Minor"
+    if "MED" in s or "HIGH" in s or "MAJOR" in s or "CRITICAL" in s or "SEVERE" in s:
+        return "Major"
+    return "Minor"
+
+def process_status_value(val: Any) -> str:
+    """Process status value: standardizes to 'Open' or 'Closed'."""
+    s = clean_cell_str(val).strip()
+    s_lower = s.lower()
+    if "open" in s_lower:
+        return "Open"
+    if "close" in s_lower:
+        return "Closed"
+    return s if s else "Closed"
+
 def read_weekly_observation_excel(file_path: str) -> List[Dict[str, Any]]:
     """
     Read weekly observation excel file and return standardized list of records.
-    Robust against:
-    - Title banner rows / logos on top of sheets (auto-detects header row 0 to 6)
-    - Multi-sheet workbooks (scans sheets for observations data)
-    - Varied column namings and missing columns
-    - Missing files or empty sheets
+    Safely ingest flattened spreadsheet structures without timeout or crashes.
+    Implements COLUMN FIELD MAPPING PROTOCOL:
+    * Source 'Location' -> Map to: LOCATION
+    * Source 'Finding' -> Map to: OBSERVATION
+    * Source 'Corrective Action' -> Map to: RECOMMENDATION
+    * Source 'Action By' -> Map to: RESPONSIBLE ENTITY
+    * Source 'Due Date' -> Map to: DUE DATE
+    * Source 'Risk Level' -> Map to: TYPE (Process values: 'Low' to 'Minor', 'Medium' and 'High' to 'Major')
+    * Source 'Status' -> Map to: STATUS
+    * Source 'Raised By' -> Map to: Observed By (Safety Officer Name signature)
+    * Source 'Assignee' -> Map to: Status By (Site Engineer / Supervisor Name signature)
     """
     if not file_path or not os.path.exists(file_path):
         return []
 
-    # Try reading workbook to find best sheet and header row
-    best_df = None
-    best_score = -1
+    # 1. Fast sheet discovery
+    excel_file = None
+    sheet_names = [0]
+    is_csv = file_path.lower().endswith(('.csv', '.tsv', '.txt'))
 
-    try:
-        excel_file = pd.ExcelFile(file_path)
-        sheet_names = excel_file.sheet_names
-    except Exception as e:
-        # Fallback to direct read
-        excel_file = None
-        sheet_names = [0]
+    if not is_csv:
+        try:
+            excel_file = pd.ExcelFile(file_path)
+            sheet_names = excel_file.sheet_names
+        except Exception:
+            excel_file = None
+            sheet_names = [0]
 
-    # Prioritize sheets whose names contain observation-related words
+    # Prioritize sheets whose names contain observation-related keywords
     ordered_sheets = []
     for s in sheet_names:
         s_lower = str(s).lower()
-        if any(k in s_lower for k in ['obs', 'weekly', 'register', 'hse', 'hazard', 'report', 'log']):
+        if any(k in s_lower for k in ['obs', 'weekly', 'register', 'hse', 'hazard', 'report', 'log', 'sheet1', 'data']):
             ordered_sheets.insert(0, s)
         else:
             ordered_sheets.append(s)
 
-    col_keywords = {
+    col_target_patterns = {
+        'location': ['location', 'area', 'site', 'worklocation', 'facility', 'unit', 'gosp', 'place', 'workarea', 'worksite', 'station', 'locations'],
         'finding': ['finding', 'findings', 'observation', 'observations', 'observationdetails', 'description', 'hazard', 'hazarddetails', 'itemdescription', 'issue', 'unsafeact', 'unsafecondition', 'details', 'detail', 'actionitem', 'deficiency'],
-        'area': ['area', 'location', 'site', 'worklocation', 'facility', 'unit', 'gosp', 'place', 'workarea', 'worksite', 'station', 'locations'],
-        'date': ['observationdate', 'date', 'obsdate', 'dateofobservation', 'inspectiondate', 'targetdate', 'raiseddate', 'dated'],
-        'action': ['correctiveaction', 'recommendation', 'recommendations', 'actionrequired', 'actiontaken', 'correctiveactiontaken', 'preventiveaction', 'action', 'proposedaction', 'correctiveactions'],
-        'responsible': ['responsibleperson', 'responsibleentity', 'responsible', 'assignedto', 'actionby', 'pic', 'personincharge', 'supervisor'],
+        'corrective_action': ['correctiveaction', 'recommendation', 'recommendations', 'actionrequired', 'actiontaken', 'correctiveactiontaken', 'preventiveaction', 'action', 'proposedaction', 'correctiveactions'],
+        'action_by': ['actionby', 'responsibleentity', 'responsibleperson', 'responsible', 'assignedto', 'pic', 'personincharge', 'supervisor', 'actionparty', 'responsiblecompany'],
+        'due_date': ['duedate', 'observationdate', 'date', 'obsdate', 'dateofobservation', 'inspectiondate', 'targetdate', 'raiseddate', 'dated'],
+        'risk_level': ['risklevel', 'risk', 'type', 'observationtype', 'hazardtype', 'classification', 'severity'],
         'status': ['status', 'actionstatus', 'currentstatus'],
+        'raised_by': ['raisedby', 'observedby', 'safetyofficer', 'safetyofficername', 'inspector', 'auditor', 'reportedby', 'createdby'],
+        'assignee': ['assignee', 'statusby', 'siteengineer', 'engineer', 'supervisor', 'actionowner', 'closedby'],
         'sn': ['sn', 'sno', 'no', 'number', 'id', 'item', 'itemno', 'slno']
     }
 
-    for sheet in ordered_sheets:
-        # Check header rows from 0 to 6
-        for header_idx in range(7):
+    best_df = None
+    best_score = -1
+
+    if is_csv:
+        try:
+            best_df = pd.read_csv(file_path)
+        except Exception:
             try:
-                if excel_file:
-                    candidate_df = excel_file.parse(sheet, header=header_idx)
-                else:
-                    candidate_df = pd.read_excel(file_path, header=header_idx)
-                
-                if candidate_df.empty or len(candidate_df.columns) < 2:
+                best_df = pd.read_csv(file_path, sep=';')
+            except Exception:
+                return []
+    else:
+        # Fast header scanning: read first 12 rows of candidates without loading entire sheet repeatedly
+        for sheet in ordered_sheets[:4]:  # inspect up to 4 sheets maximum to eliminate timeouts
+            try:
+                # Read headerless snippet (fast: only 12 rows)
+                preview_df = pd.read_excel(file_path, sheet_name=sheet, header=None, nrows=12)
+                if preview_df.empty:
                     continue
-                
-                # Score candidate based on matched columns
-                matched_categories = set()
-                for c in candidate_df.columns:
-                    c_norm = normalize_col(c)
-                    for cat, kws in col_keywords.items():
-                        if c_norm in kws:
-                            matched_categories.add(cat)
-                
-                score = len(matched_categories)
+
+                best_sheet_row = 0
+                max_sheet_score = 0
+
+                for r_idx in range(min(len(preview_df), 10)):
+                    row_vals = [normalize_col(v) for v in preview_df.iloc[r_idx] if pd.notna(v)]
+                    matched_cats = set()
+                    for v_norm in row_vals:
+                        if not v_norm:
+                            continue
+                        for cat, kws in col_target_patterns.items():
+                            if v_norm in kws or any(kw == v_norm for kw in kws):
+                                matched_cats.add(cat)
+                    score = len(matched_cats)
+                    if score > max_sheet_score:
+                        max_sheet_score = score
+                        best_sheet_row = r_idx
+
                 # Extra bonus if sheet name was relevant
                 if any(k in str(sheet).lower() for k in ['obs', 'register', 'hse']):
-                    score += 2
+                    max_sheet_score += 2
 
-                if score > best_score and ('finding' in matched_categories or 'area' in matched_categories or score >= 2):
-                    best_score = score
-                    best_df = candidate_df
-                    if score >= 4:
+                if max_sheet_score > best_score:
+                    best_score = max_sheet_score
+                    # Now read the full sheet just ONCE with identified header
+                    best_df = pd.read_excel(file_path, sheet_name=sheet, skiprows=best_sheet_row)
+                    if max_sheet_score >= 4:
                         break
             except Exception:
                 continue
-        if best_score >= 4:
-            break
 
-    # If no high-scoring sheet found, fall back to standard header=0
+        # Fallback if scanning failed: read once with default header=0
+        if best_df is None or best_df.empty:
+            try:
+                best_df = pd.read_excel(file_path)
+            except Exception:
+                return []
+
     if best_df is None or best_df.empty:
-        try:
-            best_df = pd.read_excel(file_path)
-        except Exception:
-            return []
-
-    df = best_df
-    if df.empty:
         return []
 
-    # Map columns based on normalized names
+    df = best_df
+
+    # Flatten multi-level column names if present
+    flattened_cols = []
+    for c in df.columns:
+        if isinstance(c, tuple):
+            flattened_cols.append(" ".join(str(p) for p in c if str(p) and "Unnamed" not in str(p)).strip())
+        else:
+            flattened_cols.append(str(c))
+    df.columns = flattened_cols
+
+    # Helper function to get normalized column key from flattened/nested names
+    def extract_clean_col_key(col_name: str) -> str:
+        s = str(col_name).strip()
+        # Handle dot or slash notation like 'record.Location' or 'Observation/Finding'
+        if '.' in s:
+            s = s.split('.')[-1]
+        if '/' in s:
+            s = s.split('/')[-1]
+        return normalize_col(s)
+
     col_map = {}
     for col in df.columns:
-        norm = normalize_col(col)
-        if norm in ['sn', 'sno', 'no', 'number', 'id', 'item', 'itemno', 'slno']:
-            col_map['sn'] = col
-        elif norm in ['area', 'location', 'site', 'worklocation', 'facility', 'unit', 'gosp', 'place', 'workarea', 'worksite', 'station', 'locations']:
-            col_map['area'] = col
-        elif norm in ['finding', 'observation', 'observationdetails', 'description', 'findings', 'hazard', 'hazarddetails', 'itemdescription', 'issue', 'unsafeact', 'unsafecondition', 'details', 'detail', 'deficiency']:
+        norm = extract_clean_col_key(col)
+        if not norm:
+            continue
+
+        # Priority 1: Exact matches for user protocol
+        if norm in ['location']:
+            col_map['location'] = col
+        elif norm in ['finding']:
             col_map['finding'] = col
-        elif norm in ['correctiveaction', 'recommendation', 'recommendations', 'actionrequired', 'actiontaken', 'correctiveactiontaken', 'preventiveaction', 'action', 'proposedaction', 'correctiveactions']:
+        elif norm in ['correctiveaction']:
             col_map['corrective_action'] = col
-        elif norm in ['observationdate', 'date', 'obsdate', 'dateofobservation', 'inspectiondate', 'targetdate', 'raiseddate', 'dated']:
-            col_map['observation_date'] = col
-        elif norm in ['responsibleperson', 'responsibleentity', 'responsible', 'assignedto', 'actionby', 'pic', 'personincharge']:
-            col_map['responsible_person'] = col
-        elif norm in ['category', 'observationcategory', 'hazardcategory', 'natureofhazard', 'categoryofhazard']:
-            col_map['category'] = col
-        elif norm in ['status', 'actionstatus', 'currentstatus']:
+        elif norm in ['actionby']:
+            col_map['action_by'] = col
+        elif norm in ['duedate']:
+            col_map['due_date'] = col
+        elif norm in ['risklevel']:
+            col_map['risk_level'] = col
+        elif norm in ['status']:
             col_map['status'] = col
-        elif norm in ['dateclosed', 'closeoutdate', 'closedate', 'closeddate', 'completeddate']:
-            col_map['date_closed'] = col
-        elif norm in ['responsiblecompany', 'company', 'agency']:
-            col_map['responsible_company'] = col
-        elif norm in ['assigneecompany', 'contractor', 'actionparty']:
-            col_map['assignee_company'] = col
-        elif norm in ['type', 'observationtype', 'hazardtype', 'classification', 'severity', 'risk']:
-            col_map['observation_type'] = col
-        elif any(k in norm for k in ['permitactivity', 'permit', 'activity', 'workdescription', 'activities']):
-            col_map['permit_activity'] = col
-        elif norm in ['remarks', 'remark', 'comments', 'notes']:
-            col_map['remarks'] = col
+        elif norm in ['raisedby']:
+            col_map['raised_by'] = col
+        elif norm in ['assignee']:
+            col_map['assignee'] = col
+
+        # Priority 2: Standard synonyms if not already matched
+        if 'location' not in col_map and norm in col_target_patterns['location']:
+            col_map['location'] = col
+        if 'finding' not in col_map and norm in col_target_patterns['finding']:
+            col_map['finding'] = col
+        if 'corrective_action' not in col_map and norm in col_target_patterns['corrective_action']:
+            col_map['corrective_action'] = col
+        if 'action_by' not in col_map and norm in col_target_patterns['action_by']:
+            col_map['action_by'] = col
+        if 'due_date' not in col_map and norm in col_target_patterns['due_date']:
+            col_map['due_date'] = col
+        if 'risk_level' not in col_map and norm in col_target_patterns['risk_level']:
+            col_map['risk_level'] = col
+        if 'status' not in col_map and norm in col_target_patterns['status']:
+            col_map['status'] = col
+        if 'raised_by' not in col_map and norm in col_target_patterns['raised_by']:
+            col_map['raised_by'] = col
+        if 'assignee' not in col_map and norm in col_target_patterns['assignee']:
+            col_map['assignee'] = col
+        if 'sn' not in col_map and norm in col_target_patterns['sn']:
+            col_map['sn'] = col
 
     # Fallback heuristic: If 'finding' is missing, find column with longest text
     if 'finding' not in col_map:
@@ -234,41 +315,66 @@ def read_weekly_observation_excel(file_path: str) -> List[Dict[str, Any]]:
         if longest_col:
             col_map['finding'] = longest_col
 
-    # Fallback heuristic: If 'area' is missing, look for columns containing GOSP or Site
-    if 'area' not in col_map:
+    # Fallback heuristic: If 'location' is missing, look for columns containing GOSP or Site
+    if 'location' not in col_map:
         for col in df.columns:
             if col in col_map.values():
                 continue
             series_str = " ".join(df[col].dropna().astype(str).head(10)).upper()
             if any(k in series_str for k in ['GOSP', 'LAYDOWN', 'SITE', 'ABQAIQ', 'UNIT', 'AREA']):
-                col_map['area'] = col
+                col_map['location'] = col
                 break
 
     records = []
+    today_str = datetime.date.today().strftime("%d/%m/%Y")
+
     for idx, row in df.iterrows():
-        # Clean values
-        finding_val = clean_cell_str(row.get(col_map.get('finding', '')) if 'finding' in col_map else '')
-        area_val = clean_cell_str(row.get(col_map.get('area', '')) if 'area' in col_map else '')
+        # 1. Location -> Map to: LOCATION
+        loc_val = clean_cell_str(row.get(col_map.get('location', '')) if 'location' in col_map else '')
         
-        # Skip completely empty rows
-        if not finding_val and not area_val:
+        # 2. Finding -> Map to: OBSERVATION
+        obs_val = clean_cell_str(row.get(col_map.get('finding', '')) if 'finding' in col_map else '')
+
+        # Skip rows that have neither location nor observation
+        if not loc_val and not obs_val:
             continue
-        
-        # If finding is empty but area is present, use a default placeholder or area
-        if not finding_val and area_val:
-            finding_val = f"General HSE observation at {area_val}"
-        elif not area_val and finding_val:
-            area_val = "GOSP-06"
-        
-        raw_date = row.get(col_map.get('observation_date', '')) if 'observation_date' in col_map else ''
-        std_date = parse_date_value(raw_date)
-        if not std_date:
-            std_date = datetime.date.today().strftime("%d/%m/%Y")
-        
-        raw_close_date = row.get(col_map.get('date_closed', '')) if 'date_closed' in col_map else ''
-        std_close_date = parse_date_value(raw_close_date) if raw_close_date else std_date
-        
-        # SN value
+
+        if not loc_val and obs_val:
+            loc_val = "GOSP-06"
+        if not obs_val and loc_val:
+            obs_val = f"General HSE observation at {loc_val}"
+
+        # 3. Corrective Action -> Map to: RECOMMENDATION
+        rec_val = clean_cell_str(row.get(col_map.get('corrective_action', '')) if 'corrective_action' in col_map else '')
+        if not rec_val:
+            rec_val = "Instructed team to comply with HSE safety standards and complete corrective action."
+
+        # 4. Action By -> Map to: RESPONSIBLE ENTITY
+        resp_entity_val = clean_cell_str(row.get(col_map.get('action_by', '')) if 'action_by' in col_map else '')
+        if not resp_entity_val:
+            resp_entity_val = "Site Supervisor"
+
+        # 5. Due Date -> Map to: DUE DATE
+        raw_date = row.get(col_map.get('due_date', '')) if 'due_date' in col_map else ''
+        std_due_date = parse_date_value(raw_date) if raw_date else ""
+        if not std_due_date:
+            std_due_date = today_str
+
+        # 6. Risk Level -> Map to: TYPE (Process values: 'Low' to 'Minor', 'Medium' and 'High' to 'Major')
+        raw_risk = clean_cell_str(row.get(col_map.get('risk_level', '')) if 'risk_level' in col_map else '')
+        type_val = process_risk_level_to_type(raw_risk) if raw_risk else ("Minor" if (len(records) % 2 == 0) else "Major")
+
+        # 7. Status -> Map to: STATUS
+        raw_status = clean_cell_str(row.get(col_map.get('status', '')) if 'status' in col_map else '')
+        status_val = process_status_value(raw_status)
+
+        # 8. Raised By -> Map to: Observed By (Safety Officer Name signature)
+        raised_by_val = clean_cell_str(row.get(col_map.get('raised_by', '')) if 'raised_by' in col_map else '')
+
+        # 9. Assignee -> Map to: Status By (Site Engineer / Supervisor Name signature)
+        assignee_val = clean_cell_str(row.get(col_map.get('assignee', '')) if 'assignee' in col_map else '')
+
+        # SN index
         sn_val = row.get(col_map.get('sn', '')) if 'sn' in col_map else ''
         if pd.isna(sn_val) or sn_val == '' or clean_cell_str(sn_val) == '':
             sn_val = len(records) + 1
@@ -276,37 +382,58 @@ def read_weekly_observation_excel(file_path: str) -> List[Dict[str, Any]]:
             try:
                 sn_val = int(float(sn_val))
             except Exception:
-                sn_val = str(sn_val).strip()
-
-        resp_person = clean_cell_str(row.get(col_map.get('responsible_person', '')) if 'responsible_person' in col_map else '')
-        category = clean_cell_str(row.get(col_map.get('category', '')) if 'category' in col_map else '') or 'General'
-        status = clean_cell_str(row.get(col_map.get('status', '')) if 'status' in col_map else '') or 'Closed'
-        resp_company = clean_cell_str(row.get(col_map.get('responsible_company', '')) if 'responsible_company' in col_map else '') or 'HEISCO'
-        assignee_company = clean_cell_str(row.get(col_map.get('assignee_company', '')) if 'assignee_company' in col_map else '') or resp_company
-        obs_type = clean_cell_str(row.get(col_map.get('observation_type', '')) if 'observation_type' in col_map else '')
-        permit_act = clean_cell_str(row.get(col_map.get('permit_activity', '')) if 'permit_activity' in col_map else '')
-        remarks = clean_cell_str(row.get(col_map.get('remarks', '')) if 'remarks' in col_map else '')
-        corr_action = clean_cell_str(row.get(col_map.get('corrective_action', '')) if 'corrective_action' in col_map else '')
+                sn_val = len(records) + 1
 
         record = {
+            # Source protocol uppercase mappings
+            'LOCATION': loc_val,
+            'OBSERVATION': obs_val,
+            'RECOMMENDATION': rec_val,
+            'RESPONSIBLE ENTITY': resp_entity_val,
+            'RESPONSIBLE_ENTITY': resp_entity_val,
+            'DUE DATE': std_due_date,
+            'DUE_DATE': std_due_date,
+            'TYPE': type_val,
+            'STATUS': status_val,
+            'RAISED_BY': raised_by_val,
+            'ASSIGNEE': assignee_val,
+
+            # Lowercase and system compatibility mappings
+            'location': loc_val,
+            'area': loc_val,
+            'observation': obs_val,
+            'finding': obs_val,
+            'recommendation': rec_val,
+            'corrective_action': rec_val,
+            'responsible_entity': resp_entity_val,
+            'responsible_person': resp_entity_val,
+            'action_by': resp_entity_val,
+            'due_date': std_due_date,
+            'observation_date': std_due_date,
+            'type': type_val,
+            'observation_type': type_val,
+            'doc_type': type_val,
+            'status': status_val,
+            'observed_by': raised_by_val,
+            'raised_by': raised_by_val,
+            'Dynamic_Raised_By': raised_by_val,
+            'status_by': assignee_val,
+            'assignee': assignee_val,
+            'Dynamic_Assignee': assignee_val,
+            'reviewed_by': 'AHMED GHALWASH',
+
+            # Ancillary attributes
+            'sn': sn_val,
             'original_sn': sn_val,
-            'area': area_val,
-            'finding': finding_val,
-            'corrective_action': corr_action,
-            'raw_observation_date': raw_date,
-            'observation_date': std_date,
-            'responsible_person': resp_person,
-            'category': category,
-            'status': status,
-            'date_closed': std_close_date,
-            'responsible_company': resp_company,
-            'assignee_company': assignee_company,
-            'observation_type': obs_type,
-            'permit_activity': permit_act,
-            'remarks': remarks
+            'inspection_id': f"HSCO-OR-{sn_val:02d}",
+            'category': 'General',
+            'date_closed': std_due_date,
+            'responsible_company': 'HEISCO',
+            'assignee_company': 'HEISCO',
+            'remarks': ''
         }
         records.append(record)
-        
+
     return records
 
 

@@ -437,16 +437,18 @@ def preview_page():
         save_current_state(state)
 
     total_records = len(processed)
-    total_pages = (total_records + 2) // 3
     
-    locations = sorted(list({item.get("area", "") for item in processed if item.get("area")}))
-    dates = [item.get("observation_date", "") for item in processed if item.get("observation_date")]
+    locations = sorted(list({(item.get("LOCATION") or item.get("location") or item.get("area", "")) for item in processed if (item.get("LOCATION") or item.get("location") or item.get("area"))}))
+    dates = [(item.get("DUE_DATE") or item.get("due_date") or item.get("observation_date", "")) for item in processed if (item.get("DUE_DATE") or item.get("due_date") or item.get("observation_date"))]
     if dates:
         date_range = f"{dates[0]} to {dates[-1]}" if len(dates) > 1 else dates[0]
         default_reviewed_date = "05/09/2026"
     else:
         date_range = "N/A"
         default_reviewed_date = datetime.date.today().strftime("%d/%m/%Y")
+
+    report_groups = split_into_pages(processed, reviewed_by_date=default_reviewed_date, reviewed_by_name="AHMED GHALWASH")
+    total_pages = len(report_groups)
 
     period_start = activity_data.get("period_start", "05-09-2026") if activity_data else "05-09-2026"
     period_end = activity_data.get("period_end", "10-09-2026") if activity_data else "10-09-2026"
@@ -456,6 +458,7 @@ def preview_page():
 
     return render_template(
         "preview.html",
+        report_groups=report_groups,
         preview_records=preview_records,
         total_records=total_records,
         total_pages=total_pages,
@@ -742,6 +745,18 @@ def generate_observations_report():
         reviewed_by_name = request.form.get("reviewed_by_name", "AHMED GHALWASH").strip() or "AHMED GHALWASH"
         reviewed_by_date = request.form.get("reviewed_by_date", "").strip() or datetime.date.today().strftime("%d/%m/%Y")
 
+        # Check if user requested preview instead of immediate Word download
+        user_action = request.form.get("action", "generate").lower()
+        if "preview" in user_action:
+            state = load_current_state()
+            state["processed"] = processed
+            state["names_mapping"] = names_map
+            state["reviewed_by_name"] = reviewed_by_name
+            state["reviewed_by_date"] = reviewed_by_date
+            state["weekly_filename"] = getattr(weekly_file, 'filename', 'uploaded_weekly.xlsx')
+            save_current_state(state)
+            return redirect(url_for("preview_page"))
+
         try:
             pages_data = split_into_pages(processed, reviewed_by_date=reviewed_by_date, reviewed_by_name=reviewed_by_name)
         except Exception as page_err:
@@ -1020,6 +1035,7 @@ def download_page():
     )
 
 @app.route("/download/word")
+@app.route("/download-observations")
 @login_required
 def download_word():
     output_word_path = os.path.join(OUTPUT_DIR, "HSE_Observation_Register.docx")
