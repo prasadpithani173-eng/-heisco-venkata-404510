@@ -1268,7 +1268,7 @@ def download_sample_names():
 @app.route("/sample/activity")
 def download_sample_activity():
     ensure_sample_files_exist()
-    path = os.path.join(SAMPLE_DIR, "Weekly_HSE_Activity_Sample.xlsx")
+    path = os.path.join(SAMPLE_DIR, "weekly_Observation_Sample.xlsx")
     return send_file(
         path,
         as_attachment=True,
