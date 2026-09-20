@@ -18,7 +18,6 @@ import db
 from services.excel_reader import (
     read_weekly_observation_excel,
     read_names_locations_excel,
-    format_date_for_jsl,
     parse_date_value,
 )
 from services.mapping import process_and_map_observations, split_into_pages
