@@ -1,0 +1,6 @@
+services:
+  - type: static
+    name: heisco-venkata-frontend
+    env: static
+    buildCommand: echo "Skipping build steps"
+    publishDir: .
