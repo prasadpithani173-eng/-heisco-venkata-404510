@@ -1,6 +1,9 @@
 import pandas as pd
 import datetime
-from python_calamine import CalamineWorkbook
+try:
+    from python_calamine import CalamineWorkbook
+except ImportError:
+    CalamineWorkbook = None
 
 def parse_date_value(val):
     if pd.isna(val):

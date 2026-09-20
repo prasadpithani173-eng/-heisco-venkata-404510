@@ -341,6 +341,11 @@ def charts_page():
 # =============================================================
 
 @app.route("/")
+@app.route("/index.html")
+def root_index():
+    """Serves the standalone frontend HSE Operations Hub directly."""
+    return send_file(os.path.join(BASE_DIR, "index.html"))
+
 @app.route("/dashboard")
 @login_required
 def dashboard():
