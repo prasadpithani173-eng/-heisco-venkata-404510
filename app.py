@@ -1,51 +1,50 @@
 import streamlit as st
 import pandas as pd
-import os
+import plotly.express as px
+from datetime import date, timedelta
+import random
 
-st.set_page_config(page_title="HEISCO HSE Dashboard", layout="wide")
+st.set_page_config(page_title="HEISCO - Weekly HSE Dashboard", layout="wide")
 st.title("HEISCO - Weekly HSE Dashboard")
 
-base = "sample_data"
+# Sample data - no Excel needed
+locations = ["Jubail", "Yanbu", "Khobar", "Dammam"]
+names = ["Venkata", "Prasad", "Ahmed", "Sara", "John", "Fatima"]
 
-@st.cache_data
-def load_data():
-    names = pd.read_excel(os.path.join(base, "Names_Locations_Sample.xlsx"))
-    obs = pd.read_excel(os.path.join(base, "Weekly_Observation_Sample.xlsx"))
-    act = pd.read_excel(os.path.join(base, "Weekly_HSE_Activity_Sample.xlsx"))
-    return names, obs, act
+obs_data = []
+act_data = []
+for i in range(60):
+    d = date.today() - timedelta(days=random.randint(0,30))
+    loc = random.choice(locations)
+    obs_data.append({"Date": d, "Location": loc, "Observer": random.choice(names), "Observations": random.randint(1,10)})
+    act_data.append({"Date": d, "Location": loc, "Owner": random.choice(names), "Open": random.randint(0,5), "Closed": random.randint(1,8)})
 
-names_df, obs_df, act_df = load_data()
+obs_df = pd.DataFrame(obs_data)
+act_df = pd.DataFrame(act_data)
 
-# Sidebar filters
+# Filters
 st.sidebar.header("Filters")
-areas = ["All"] + sorted(obs_df["Area"].astype(str).unique().tolist())
-sel_area = st.sidebar.selectbox("Area / Location", areas)
-
-if sel_area != "All":
-    obs_f = obs_df[obs_df["Area"].astype(str) == sel_area]
-else:
-    obs_f = obs_df
+sel_loc = st.sidebar.multiselect("Location", locations, default=locations)
+obs_f = obs_df[obs_df["Location"].isin(sel_loc)]
+act_f = act_df[act_df["Location"].isin(sel_loc)]
 
 # KPIs
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Total Observations", len(obs_f))
-c2.metric("Major", len(obs_f[obs_f["Observation Type"]=="Major"]))
-c3.metric("Minor", len(obs_f[obs_f["Observation Type"]=="Minor"]))
-c4.metric("Closed", len(obs_f[obs_f["Status"]=="Closed"]))
+c1,c2,c3,c4 = st.columns(4)
+c1.metric("Total Observations", int(obs_f["Observations"].sum()))
+c2.metric("Total Open Actions", int(act_f["Open"].sum()))
+c3.metric("Total Closed Actions", int(act_f["Closed"].sum()))
+c4.metric("Locations", len(sel_loc))
 
 # Charts
-st.subheader("Observations by Category")
-st.bar_chart(obs_f["Category"].value_counts())
+st.subheader("Observations by Location")
+fig1 = px.bar(obs_f.groupby("Location")["Observations"].sum().reset_index(), x="Location", y="Observations")
+st.plotly_chart(fig1, use_container_width=True)
 
-st.subheader("Observations by Area")
-st.bar_chart(obs_f["Area"].value_counts())
+st.subheader("Actions Trend")
+trend = act_f.groupby("Date")[["Open","Closed"]].sum().reset_index()
+fig2 = px.line(trend, x="Date", y=["Open","Closed"])
+st.plotly_chart(fig2, use_container_width=True)
 
-# Tables
-st.subheader("Weekly Observations")
-st.dataframe(obs_f, use_container_width=True)
-
-st.subheader("Team - Locations")
-st.dataframe(names_df, use_container_width=True)
-
-st.subheader("Weekly HSE Activity / Permits")
-st.dataframe(act_df, use_container_width=True)
+st.subheader("Data")
+st.dataframe(obs_f.head(20))
+st.dataframe(act_f.head(20))
